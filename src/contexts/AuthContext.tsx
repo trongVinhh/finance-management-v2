@@ -1,0 +1,148 @@
+// src/context/AuthContext.tsx
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { supabase } from "../lib/supabase";
+import { useInitDefaults } from "../hooks/useInitDefault";
+
+type AuthContextType = {
+  user: any;
+  session: any;
+  loading: boolean;
+  userSettings: any;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  logout: () => Promise<void>;
+  getUser: () => any;
+  updateUserSettings: (settings: any) => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [userSettings, setUserSettings] = useState<any>(null);
+  const { initDefaults } = useInitDefaults();
+
+  // Lấy session ban đầu
+  useEffect(() => {
+    const initAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+
+      if (session?.user) {
+        await fetchUserSettings(session.user.id);
+      }
+    };
+
+    initAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) fetchUserSettings(session.user.id);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchUserSettings = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (!error && data) {
+      setUserSettings(data);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    if (data.user) {
+      localStorage.setItem("user_id", data.user.id);
+      setUser(data.user);
+      await fetchUserSettings(data.user.id);
+    }
+  };
+
+  const signup = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) throw error;
+    if (data.user) {
+      await initDefaults(data.user.id);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`, // URL xử lý sau khi người dùng nhấn link trong email
+    });
+    if (error) throw error;
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setUserSettings(null);
+  };
+
+  const getUser = () => user;
+
+  const updateUserSettings = async (settings: any) => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("user_settings")
+      .upsert({ user_id: user.id, ...settings })
+      .select()
+      .single();
+
+    if (error) throw error;
+    setUserSettings(data);
+  };
+
+  const value: AuthContextType = {
+    user,
+    session,
+    loading,
+    userSettings,
+    login,
+    signup,
+    resetPassword,
+    logout,
+    getUser,
+    updateUserSettings,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
+};
