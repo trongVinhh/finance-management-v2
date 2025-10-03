@@ -4,15 +4,19 @@ import { useState } from 'react'
 import { useAccounts } from '../services/accounts/useAccounts'
 import { AccountType } from '../services/accounts/enum/account-type.enum'
 import { useAuth } from '../contexts/AuthContext'
+import { formatCurrency } from '../services/settings/enum/currency.enum'
+import { useSettings } from '../services/settings/useSettings'
 
 const { Title, Text } = Typography
 const { Option } = Select
 
 export default function Accounts() {
+  const { user } = useAuth();
+  const { settings } = useSettings()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<string | null>(null)
   const [form] = Form.useForm()
-  const { user, userSettings } = useAuth();
+  
 
   if (!user) {
     return (
@@ -24,6 +28,7 @@ export default function Accounts() {
     )
   }
 
+
   const {
     accounts,
     loading,
@@ -34,15 +39,7 @@ export default function Accounts() {
     getAccountColor,
     getTotalBalance,
   } = useAccounts(user.id)
-
   const totalBalance = getTotalBalance()
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount)
-  }
 
   const getTypeTag = (type: AccountType) => {
     const typeMap = {
@@ -167,7 +164,7 @@ export default function Accounts() {
             <div className="text-center sm:text-left">
               <Text type="secondary" className="text-base">Tổng tài sản</Text>
               <div className={`text-3xl font-bold mt-2 ${totalBalance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                {formatCurrency(totalBalance)}
+                {formatCurrency(totalBalance, settings?.currency || 'VND')}
               </div>
             </div>
           </Col>
@@ -267,7 +264,7 @@ export default function Accounts() {
                   <div className="text-center">
                     <Text type="secondary" className="text-sm block mb-1">Số dư</Text>
                     <div className={`text-xl font-bold ${item.amount >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {formatCurrency(item.amount)}
+                      {formatCurrency(item.amount, settings?.currency || 'VND')}
                     </div>
                   </div>
                 </Card>

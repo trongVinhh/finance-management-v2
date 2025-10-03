@@ -9,10 +9,11 @@ interface UserSettings {
   currency: string;
   created_at?: string;
   updated_at?: string;
-  allocations: {
-    accountId: string;
-    amount: number;
-  }[];
+  allocations: Allocation[];
+}
+interface Allocation {
+  accountId: string;
+  amount: number
 }
 
 export const useSettings = () => {

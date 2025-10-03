@@ -1,298 +1,307 @@
-import { 
-  Table, 
-  Button, 
-  Card, 
-  Input, 
-  Select, 
-  DatePicker, 
-  Space, 
-  Tag, 
-  Tooltip, 
-  Typography, 
-  Row, 
-  Col, 
-  Statistic, 
-  Modal, 
-  Form, 
-  InputNumber, 
-  message, 
-  Popconfirm
-} from 'antd'
-import { 
-  PlusOutlined, 
-  SearchOutlined, 
-  FilterOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
+import {
+  Table,
+  Button,
+  Card,
+  Input,
+  Select,
+  DatePicker,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  Row,
+  Col,
+  Statistic,
+  Modal,
+  Form,
+  InputNumber,
+  Popconfirm,
+} from "antd";
+import {
+  PlusOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  EditOutlined,
+  DeleteOutlined,
   ExportOutlined,
   ImportOutlined,
   UpOutlined,
   DownOutlined,
   SwapOutlined,
-  ArrowUpOutlined, 
+  ArrowUpOutlined,
   ArrowDownOutlined,
-  CalendarOutlined
-} from '@ant-design/icons'
-import { useState } from 'react'
-import dayjs, { Dayjs } from 'dayjs'
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
-import type { ColumnsType } from 'antd/es/table'
-dayjs.extend(isSameOrAfter)
-dayjs.extend(isSameOrBefore)
+  CalendarOutlined,
+} from "@ant-design/icons";
+import { useMemo, useState } from "react";
+import dayjs, { Dayjs } from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import type { ColumnsType } from "antd/es/table";
+import { useAuth } from "../contexts/AuthContext";
+import { useAccounts } from "../services/accounts/useAccounts";
+import { useCategories } from "../services/categories/useCategories";
+import { useTransactions } from "../services/transactions/useTransactions";
+import { useSettings } from "../services/settings/useSettings";
+import { formatCurrency } from "../services/settings/enum/currency.enum";
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
-const { Search } = Input
-const { RangePicker } = DatePicker
-const { Title, Text } = Typography
-const { Option } = Select
+const { Search } = Input;
+const { RangePicker } = DatePicker;
+const { Title, Text } = Typography;
+const { Option } = Select;
 
 interface Transaction {
-  key: number
-  id: number
-  date: string
-  desc: string
-  amount: number
-  type: 'income' | 'expense'
-  category: string
-  account: string
+  id: string;
+  date: string;
+  desc: string;
+  amount: number;
+  type: "income" | "expense" | "suddenly";
+  category: string;
+  account_id: string;
 }
 
 export default function Transactions() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
-  const [form] = Form.useForm()
-  const [searchText, setSearchText] = useState('')
-  const [selectedType, setSelectedType] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | []>([])
-  
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    { 
-      key: 1, 
-      date: '2025-09-27', 
-      desc: 'Ăn trưa tại nhà hàng ABC', 
-      amount: -120000,
-      type: 'expense',
-      category: 'Ăn uống',
-      account: 'Tiền mặt',
-      id: 1
-    },
-    { 
-      key: 2, 
-      date: '2025-09-26', 
-      desc: 'Lương tháng 9', 
-      amount: 15000000,
-      type: 'income',
-      category: 'Lương',
-      account: 'Vietcombank',
-      id: 2
-    },
-    { 
-      key: 3, 
-      date: '2025-09-25', 
-      desc: 'Mua xăng xe máy', 
-      amount: -150000,
-      type: 'expense',
-      category: 'Đi lại',
-      account: 'Thẻ tín dụng',
-      id: 3
-    },
-    { 
-      key: 4, 
-      date: '2025-09-24', 
-      desc: 'Tiền thưởng dự án', 
-      amount: 2000000,
-      type: 'income',
-      category: 'Thưởng',
-      account: 'Agribank',
-      id: 4
-    },
-    { 
-      key: 5, 
-      date: '2025-09-23', 
-      desc: 'Mua sắm tạp hóa', 
-      amount: -85000,
-      type: 'expense',
-      category: 'Mua sắm',
-      account: 'Tiền mặt',
-      id: 5
-    }
-  ])
+  const { user } = useAuth();
+  const { accounts } = useAccounts(user?.id);
+  const { categories } = useCategories(user?.id);
+  const { settings } = useSettings()
+  const {
+    transactions,
+    loading,
+    creating,
+    updating,
+    deleting,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+    getTotalIncome,
+    getTotalExpense,
+    getNetAmount,
+  } = useTransactions(user?.id);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | []>([]);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
 
-  const categories = {
-    income: ['Lương', 'Thưởng', 'Đầu tư', 'Kinh doanh', 'Khác'],
-    expense: ['Ăn uống', 'Đi lại', 'Mua sắm', 'Giải trí', 'Y tế', 'Giáo dục', 'Nhà cửa', 'Khác']
-  }
+  const categoriesByType = useMemo(() => {
+    return {
+      income: categories.filter((cat) => cat.type === "income"),
+      expense: categories.filter((cat) => cat.type === "expense"),
+      saving: categories.filter((cat) => cat.type === "saving"),
+      suddenly: categories.filter((cat) => cat.type === "suddenly"),
+    };
+  }, [categories]);
 
-  const accounts = ['Tiền mặt', 'Vietcombank', 'Agribank', 'Thẻ tín dụng']
+  const allCategories = useMemo(() => {
+    return categories.map((cat) => cat.name);
+  }, [categories]);
 
-  // Statistics calculations
-  const totalIncome = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0)
-  const totalExpense = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0)
-  const netAmount = totalIncome - totalExpense
+  const totalIncome = getTotalIncome();
+  const totalExpense = getTotalExpense();
+  const netAmount = getNetAmount();
 
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(Math.abs(amount))
-  }
+  // const formatCurrency = (amount: number): string => {
+  //   return new Intl.NumberFormat("vi-VN", {
+  //     style: "currency",
+  //     currency: "VND",
+  //     minimumFractionDigits: 0,
+  //   }).format(Math.abs(amount));
+  // };
 
-  const getTypeIcon = (type: 'income' | 'expense') => {
-    return type === 'income' ? 
-      <UpOutlined style={{ color: '#52c41a' }} /> : 
-      <DownOutlined style={{ color: '#f5222d' }} />
-  }
+  const getTypeIcon = (type: "income" | "expense") => {
+    return type === "income" ? (
+      <UpOutlined style={{ color: "#52c41a" }} />
+    ) : (
+      <DownOutlined style={{ color: "#f5222d" }} />
+    );
+  };
 
   const getTypeColor = (amount: number): string => {
-    return amount > 0 ? '#52c41a' : '#f5222d'
-  }
+    return amount > 0 ? "#52c41a" : "#f5222d";
+  };
+
+  const getCategoryByName = (name: string) => {
+    return categories.find((cat) => cat.name === name);
+  };
+
+  // Get category color
+  const getCategoryColor = (categoryName: string) => {
+    const category = getCategoryByName(categoryName);
+    return category?.color || "blue";
+  };
 
   const handleAddTransaction = () => {
-    setEditingTransaction(null)
-    form.resetFields()
-    setIsModalOpen(true)
-  }
+    setEditingTransaction(null);
+    form.resetFields();
+    form.setFieldsValue({
+      date: dayjs(),
+      type: "expense",
+    });
+    setIsModalOpen(true);
+  };
 
   const handleEditTransaction = (record: Transaction) => {
-    setEditingTransaction(record)
+    setEditingTransaction(record);
     form.setFieldsValue({
       ...record,
       date: dayjs(record.date),
-      amount: Math.abs(record.amount)
-    })
-    setIsModalOpen(true)
-  }
+      amount: Math.abs(record.amount),
+    });
+    setIsModalOpen(true);
+  };
 
-  const handleDeleteTransaction = (id: number) => {
-    setTransactions(transactions.filter(t => t.id !== id))
-    message.success('Xóa giao dịch thành công!')
-  }
+  const handleDeleteTransaction = async (id: string) => {
+    await deleteTransaction(id);
+  };
 
   const handleModalOk = async () => {
     try {
-      const values = await form.validateFields()
-      const uniqueId = Date.now() + Math.random()
+      const values = await form.validateFields();
 
-      const transactionData: Transaction = {
-        ...values,
-        date: values.date.format('YYYY-MM-DD'),
-        amount: values.type === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount),
-        id: editingTransaction ? editingTransaction.id : uniqueId,
-        key: editingTransaction ? editingTransaction.key : uniqueId
-      }
+      const transactionData = {
+        date: values.date.format("YYYY-MM-DD"),
+        desc: values.desc,
+        amount: values.amount,
+        type: values.type,
+        category: values.category,
+        account_id: values.account_id,
+      };
 
       if (editingTransaction) {
-        setTransactions(transactions.map(t => 
-          t.id === editingTransaction.id ? transactionData : t
-        ))
-        message.success('Cập nhật giao dịch thành công!')
+        await updateTransaction({
+          id: editingTransaction.id,
+          ...transactionData,
+        });
       } else {
-        setTransactions([transactionData, ...transactions])
-        message.success('Thêm giao dịch thành công!')
+        await createTransaction(transactionData);
       }
 
-      setIsModalOpen(false)
-      form.resetFields()
+      setIsModalOpen(false);
+      form.resetFields();
     } catch (error) {
-      console.error('Validation failed:', error)
+      console.error("Validation failed:", error);
     }
-  }
+  };
 
   const handleModalCancel = () => {
-    setIsModalOpen(false)
-    form.resetFields()
-  }
+    setIsModalOpen(false);
+    form.resetFields();
+  };
 
   // Filter data
   const filteredData = transactions.filter((item: Transaction) => {
-    const matchSearch = !searchText || item.desc.toLowerCase().includes(searchText.toLowerCase())
-    const matchType = !selectedType || item.type === selectedType
-    const matchCategory = !selectedCategory || item.category === selectedCategory
-    const matchDate = !dateRange.length || (
-      dayjs(item.date).isSameOrAfter(dateRange[0], 'day') &&
-      dayjs(item.date).isSameOrBefore(dateRange[1], 'day')
-    )
-    return matchSearch && matchType && matchCategory && matchDate
-  })
+    const matchSearch =
+      !searchText || item.desc.toLowerCase().includes(searchText.toLowerCase());
+    const matchCategory =
+      !selectedCategory || item.category === selectedCategory;
+    const matchDate =
+      !dateRange.length ||
+      (dayjs(item.date).isSameOrAfter(dateRange[0], "day") &&
+        dayjs(item.date).isSameOrBefore(dateRange[1], "day"));
+    return matchSearch && matchCategory && matchDate;
+  });
+
+  // Get account name by id
+  const getAccountName = (accountId: string) => {
+    const account = accounts.find((a) => a.id === accountId);
+    return account?.name || accountId;
+  };
 
   const columns: ColumnsType<Transaction> = [
     {
-      title: 'Ngày',
-      dataIndex: 'date',
-      key: 'date',
+      title: "Ngày",
+      dataIndex: "date",
+      key: "date",
       width: 120,
-      sorter: (a: Transaction, b: Transaction) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      sorter: (a: Transaction, b: Transaction) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime(),
       render: (date: string) => (
         <div className="flex items-center">
           <CalendarOutlined className="mr-2 text-gray-400" />
-          {dayjs(date).format('DD/MM/YYYY')}
+          {dayjs(date).format("DD/MM/YYYY")}
         </div>
-      )
+      ),
     },
     {
-      title: 'Loại',
-      dataIndex: 'type',
-      key: 'type',
+      title: "Loại",
+      dataIndex: "type",
+      key: "type",
       width: 80,
       filters: [
-        { text: 'Thu nhập', value: 'income' },
-        { text: 'Chi tiêu', value: 'expense' }
+        { text: "Thu nhập", value: "income" },
+        { text: "Chi tiêu", value: "expense" },
       ],
       onFilter: (value, record: Transaction) => {
-        return record.type === value
+        return record.type === value;
       },
-      render: (type: 'income' | 'expense') => (
-        <Tooltip title={type === 'income' ? 'Thu nhập' : 'Chi tiêu'}>
+      render: (type: "income" | "expense") => (
+        <Tooltip title={type === "income" ? "Thu nhập" : "Chi tiêu"}>
           {getTypeIcon(type)}
         </Tooltip>
-      )
+      ),
     },
     {
-      title: 'Mô tả',
-      dataIndex: 'desc',
-      key: 'desc',
+      title: "Mô tả",
+      dataIndex: "desc",
+      key: "desc",
       ellipsis: { showTitle: false },
-      render: (desc: string, record: Transaction) => (
-        <div>
-          <div className="font-medium">{desc}</div>
-          <div className="flex items-center mt-1">
-            <Tag color="blue">{record.category}</Tag>
-            <Text type="secondary" className="text-xs ml-2">{record.account}</Text>
+      render: (desc: string, record: Transaction) => {
+        const category = getCategoryByName(record.category);
+        return (
+          <div>
+            <div className="font-medium">{desc}</div>
+            <div className="flex items-center mt-1">
+              <Tag color={getCategoryColor(record.category)}>
+                {category?.icon && (
+                  <span className="mr-1">{category.icon}</span>
+                )}
+                {record.category}
+              </Tag>
+              <Text type="secondary" className="text-xs ml-2">
+                {getAccountName(record.account_id)}
+              </Text>
+            </div>
           </div>
-        </div>
-      )
+        );
+      },
     },
     {
-      title: 'Số tiền',
-      dataIndex: 'amount',
-      key: 'amount',
+      title: "Số tiền",
+      dataIndex: "amount",
+      key: "amount",
       width: 150,
-      align: 'right' as const,
-      sorter: (a: Transaction, b: Transaction) => Math.abs(a.amount) - Math.abs(b.amount),
+      align: "right" as const,
+      sorter: (a: Transaction, b: Transaction) =>
+        Math.abs(a.amount) - Math.abs(b.amount),
       render: (amount: number) => (
         <div className="text-right">
-          <div 
+          <div
             className="font-bold text-lg"
             style={{ color: getTypeColor(amount) }}
           >
-            {amount > 0 ? '+' : ''}{formatCurrency(amount)}
+            {amount > 0 ? "+" : ""}
+            {formatCurrency(amount, settings?.currency || 'VND')}
           </div>
         </div>
-      )
+      ),
     },
     {
-      title: 'Thao tác',
-      key: 'action',
+      title: "Thao tác",
+      key: "action",
       width: 120,
       render: (_: any, record: Transaction) => (
         <Space size="small">
           <Tooltip title="Sửa">
-            <Button 
-              type="text" 
-              icon={<EditOutlined />} 
+            <Button
+              type="text"
+              icon={<EditOutlined />}
               onClick={() => handleEditTransaction(record)}
               className="text-blue-500"
+              loading={updating}
             />
           </Tooltip>
           <Tooltip title="Xóa">
@@ -302,17 +311,26 @@ export default function Transactions() {
               okText="Có"
               cancelText="Không"
             >
-              <Button 
-                type="text" 
-                danger 
+              <Button
+                type="text"
+                danger
                 icon={<DeleteOutlined />}
+                loading={deleting}
               />
             </Popconfirm>
           </Tooltip>
         </Space>
-      )
-    }
-  ]
+      ),
+    },
+  ];
+
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-center items-center min-h-screen">
+  //       <Spin size="large" />
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen" style={{ padding: "24px" }}>
@@ -320,19 +338,29 @@ export default function Transactions() {
       <div className="mb-6">
         <Row justify="space-between" align="middle">
           <Col>
-            <Title level={2} className="mb-2">Quản lý giao dịch</Title>
-            <Text type="secondary">Theo dõi thu chi và quản lý tài chính cá nhân</Text>
+            <Title level={2} className="mb-2">
+              Quản lý giao dịch
+            </Title>
+            <Text type="secondary">
+              Theo dõi thu chi và quản lý tài chính cá nhân
+            </Text>
           </Col>
           <Col>
             <Space>
-              <Button icon={<ImportOutlined />} className="hidden sm:inline-flex">
+              <Button
+                icon={<ImportOutlined />}
+                className="hidden sm:inline-flex"
+              >
                 Nhập Excel
               </Button>
-              <Button icon={<ExportOutlined />} className="hidden sm:inline-flex">
+              <Button
+                icon={<ExportOutlined />}
+                className="hidden sm:inline-flex"
+              >
                 Xuất Excel
               </Button>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleAddTransaction}
                 size="middle"
@@ -351,9 +379,9 @@ export default function Transactions() {
             <Statistic
               title="Thu nhập"
               value={totalIncome}
-              formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: '#52c41a' }}
-              prefix={<ArrowUpOutlined  />}
+              formatter={(value) => formatCurrency(Number(value), settings?.currency || 'VND')}
+              valueStyle={{ color: "#52c41a" }}
+              prefix={<ArrowUpOutlined />}
             />
           </Card>
         </Col>
@@ -362,9 +390,9 @@ export default function Transactions() {
             <Statistic
               title="Chi tiêu"
               value={totalExpense}
-              formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: '#f5222d' }}
-              prefix={<ArrowDownOutlined  />}
+              formatter={(value) => formatCurrency(Number(value), settings?.currency || 'VND')}
+              valueStyle={{ color: "#f5222d" }}
+              prefix={<ArrowDownOutlined />}
             />
           </Card>
         </Col>
@@ -373,8 +401,8 @@ export default function Transactions() {
             <Statistic
               title="Số dư ròng"
               value={netAmount}
-              formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: netAmount >= 0 ? '#52c41a' : '#f5222d' }}
+              formatter={(value) => formatCurrency(Number(value), settings?.currency || 'VND')}
+              valueStyle={{ color: netAmount >= 0 ? "#52c41a" : "#f5222d" }}
               prefix={<SwapOutlined />}
             />
           </Card>
@@ -393,37 +421,41 @@ export default function Transactions() {
               prefix={<SearchOutlined />}
             />
           </Col>
-          
+
           <Col xs={24} sm={4}>
             <Select
               placeholder="Danh mục"
               allowClear
-              // value={selectedCategory}
+              value={selectedCategory || undefined}
               onChange={setSelectedCategory}
               className="w-full"
-              style={{width: '200px'}}
+              style={{ width: "200px" }}
             >
-              {[...categories.income, ...categories.expense].map(cat => (
-                <Option key={cat} value={cat}>{cat}</Option>
+              {allCategories.map((cat) => (
+                <Option key={cat} value={cat}>
+                  {cat}
+                </Option>
               ))}
             </Select>
           </Col>
           <Col xs={24} sm={6}>
             <RangePicker
-              placeholder={['Từ ngày', 'Đến ngày']}
-              onChange={(dates) => setDateRange(dates as [Dayjs, Dayjs] | [])}
+              placeholder={["Từ ngày", "Đến ngày"]}
+              value={dateRange.length ? dateRange : null}
+              onChange={(dates) =>
+                setDateRange(dates ? (dates as [Dayjs, Dayjs]) : [])
+              }
               className="w-full"
               format="DD/MM/YYYY"
             />
           </Col>
           <Col xs={24} sm={4}>
-            <Button 
+            <Button
               icon={<FilterOutlined />}
               onClick={() => {
-                setSearchText('')
-                setSelectedType('')
-                setSelectedCategory('')
-                setDateRange([])
+                setSearchText("");
+                setSelectedCategory("");
+                setDateRange([]);
               }}
               className="w-full"
             >
@@ -435,14 +467,16 @@ export default function Transactions() {
 
       {/* Transactions Table */}
       <Card>
-        <Table 
-          columns={columns} 
+        <Table
+          columns={columns}
           dataSource={filteredData}
+          rowKey="id"
+          loading={loading}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => 
+            showTotal: (total, range) =>
               `${range[0]}-${range[1]} của ${total} giao dịch`,
           }}
           scroll={{ x: 800 }}
@@ -460,6 +494,7 @@ export default function Transactions() {
         cancelText="Hủy"
         width={600}
         destroyOnClose
+        confirmLoading={creating || updating}
       >
         <Form form={form} layout="vertical" autoComplete="off">
           <Row gutter={16}>
@@ -467,18 +502,20 @@ export default function Transactions() {
               <Form.Item
                 label="Loại giao dịch"
                 name="type"
-                rules={[{ required: true, message: 'Vui lòng chọn loại giao dịch!' }]}
+                rules={[
+                  { required: true, message: "Vui lòng chọn loại giao dịch!" },
+                ]}
               >
                 <Select placeholder="Chọn loại giao dịch" size="large">
                   <Option value="income">
                     <Space>
-                      <UpOutlined style={{ color: '#52c41a' }} />
+                      <UpOutlined style={{ color: "#52c41a" }} />
                       Thu nhập
                     </Space>
                   </Option>
                   <Option value="expense">
                     <Space>
-                      <DownOutlined style={{ color: '#f5222d' }} />
+                      <DownOutlined style={{ color: "#f5222d" }} />
                       Chi tiêu
                     </Space>
                   </Option>
@@ -489,9 +526,9 @@ export default function Transactions() {
               <Form.Item
                 label="Ngày"
                 name="date"
-                rules={[{ required: true, message: 'Vui lòng chọn ngày!' }]}
+                rules={[{ required: true, message: "Vui lòng chọn ngày!" }]}
               >
-                <DatePicker 
+                <DatePicker
                   placeholder="Chọn ngày"
                   size="large"
                   className="w-full"
@@ -505,14 +542,11 @@ export default function Transactions() {
             label="Mô tả"
             name="desc"
             rules={[
-              { required: true, message: 'Vui lòng nhập mô tả!' },
-              { min: 3, message: 'Mô tả phải có ít nhất 3 ký tự!' }
+              { required: true, message: "Vui lòng nhập mô tả!" },
+              { min: 3, message: "Mô tả phải có ít nhất 3 ký tự!" },
             ]}
           >
-            <Input 
-              placeholder="Ví dụ: Ăn trưa tại nhà hàng..."
-              size="large"
-            />
+            <Input placeholder="Ví dụ: Ăn trưa tại nhà hàng..." size="large" />
           </Form.Item>
 
           <Row gutter={16}>
@@ -520,29 +554,43 @@ export default function Transactions() {
               <Form.Item
                 label="Danh mục"
                 name="category"
-                rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
+                rules={[{ required: true, message: "Vui lòng chọn danh mục!" }]}
               >
-                <Select placeholder="Chọn danh mục" size="large">
-                  {Form.useWatch('type', form) === 'income' ? 
-                    categories.income.map(cat => (
-                      <Option key={cat} value={cat}>{cat}</Option>
-                    )) :
-                    categories.expense.map(cat => (
-                      <Option key={cat} value={cat}>{cat}</Option>
-                    ))
-                  }
+                <Select
+                  placeholder="Chọn danh mục"
+                  size="large"
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {Form.useWatch("type", form) === "income"
+                    ? categoriesByType.income.map((cat) => (
+                        <Option key={cat.id} value={cat.name}>
+                          {cat.icon && <span className="mr-1">{cat.icon}</span>}
+                          {cat.name}
+                        </Option>
+                      ))
+                    : categoriesByType.expense.map((cat) => (
+                        <Option key={cat.id} value={cat.name}>
+                          {cat.icon && <span className="mr-1">{cat.icon}</span>}
+                          {cat.name}
+                        </Option>
+                      ))}
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 label="Tài khoản"
-                name="account"
-                rules={[{ required: true, message: 'Vui lòng chọn tài khoản!' }]}
+                name="account_id"
+                rules={[
+                  { required: true, message: "Vui lòng chọn tài khoản!" },
+                ]}
               >
                 <Select placeholder="Chọn tài khoản" size="large">
-                  {accounts.map(acc => (
-                    <Option key={acc} value={acc}>{acc}</Option>
+                  {accounts.map((acc) => (
+                    <Option key={acc.id} value={acc.id}>
+                      {acc.name}
+                    </Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -553,24 +601,23 @@ export default function Transactions() {
             label="Số tiền"
             name="amount"
             rules={[
-              { required: true, message: 'Vui lòng nhập số tiền!' },
-              { type: 'number', min: 1, message: 'Số tiền phải lớn hơn 0!' }
+              { required: true, message: "Vui lòng nhập số tiền!" },
+              { type: "number", min: 1, message: "Số tiền phải lớn hơn 0!" },
             ]}
           >
             <InputNumber
               placeholder="0"
               size="large"
               className="w-full"
-              formatter={(value) => 
-                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+              formatter={(value) =>
+                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
               }
-              // parser={(value) => value ? value.replace(/\$\s?|(,*)/g, '') : ''}
-              addonAfter="VND"
+              addonAfter={settings?.currency}
               min={0}
             />
           </Form.Item>
         </Form>
       </Modal>
     </div>
-  )
+  );
 }

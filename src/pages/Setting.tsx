@@ -13,7 +13,7 @@ import {
   Empty,
   Spin,
 } from "antd";
-import { SaveOutlined, PlusOutlined } from "@ant-design/icons";
+import { SaveOutlined } from "@ant-design/icons";
 import { currencyUnits } from "../utils/system-constants";
 import { useAccounts } from "../services/accounts/useAccounts";
 import { useAuth } from "../contexts/AuthContext";
