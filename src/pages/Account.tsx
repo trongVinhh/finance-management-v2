@@ -1,50 +1,41 @@
-import { Card, List, Button, Typography, Row, Col, Space, Divider, Tag, Avatar, Modal, Form, Input, Select, InputNumber, message } from 'antd'
-import { PlusOutlined, BankOutlined, WalletOutlined, CreditCardOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Card, List, Button, Typography, Row, Col, Divider, Tag, Avatar, Modal, Form, Input, Select, InputNumber, message, Spin, Popconfirm } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons'
 import { useState } from 'react'
+import { useAccounts } from '../services/accounts/useAccounts'
+import { AccountType } from '../services/accounts/enum/account-type.enum'
+import { useAuth } from '../contexts/AuthContext'
 
 const { Title, Text } = Typography
 const { Option } = Select
 
 export default function Accounts() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingAccount, setEditingAccount] = useState<string | null>(null)
   const [form] = Form.useForm()
-  const [accounts, setAccounts] = useState([
-    { 
-      id: 1, 
-      name: 'Tiền mặt', 
-      balance: 2000000, 
-      type: 'cash',
-      icon: <WalletOutlined />,
-      color: '#52c41a'
-    },
-    { 
-      id: 2, 
-      name: 'Vietcombank', 
-      balance: 15000000, 
-      type: 'bank',
-      icon: <BankOutlined />,
-      color: '#1890ff'
-    },
-    { 
-      id: 3, 
-      name: 'Thẻ tín dụng', 
-      balance: -500000, 
-      type: 'credit',
-      icon: <CreditCardOutlined />,
-      color: '#f5222d'
-    },
-    { 
-      id: 4, 
-      name: 'Agribank', 
-      balance: 8500000, 
-      type: 'bank',
-      icon: <BankOutlined />,
-      color: '#722ed1'
-    }
-  ])
-  const items = accounts
+  const { user, userSettings } = useAuth();
 
-  const totalBalance = items.reduce((sum, item) => sum + item.balance, 0)
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="text-center p-8">
+          <Title level={4}>Vui lòng đăng nhập để sử dụng tính năng này</Title>
+        </Card>
+      </div>
+    )
+  }
+
+  const {
+    accounts,
+    loading,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    getAccountIcon,
+    getAccountColor,
+    getTotalBalance,
+  } = useAccounts(user.id)
+
+  const totalBalance = getTotalBalance()
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -53,54 +44,72 @@ export default function Accounts() {
     }).format(amount)
   }
 
-  const getTypeTag = (type: string) => {
+  const getTypeTag = (type: AccountType) => {
     const typeMap = {
-      cash: { label: 'Tiền mặt', color: 'green' },
-      bank: { label: 'Ngân hàng', color: 'blue' },
-      credit: { label: 'Tín dụng', color: 'red' }
+      [AccountType.CASH]: { label: 'Tiền mặt', color: 'green' },
+      [AccountType.BANK]: { label: 'Ngân hàng', color: 'blue' },
+      [AccountType.CREDIT]: { label: 'Tín dụng', color: 'red' },
+      [AccountType.SAVING]: { label: 'Tiết kiệm', color: 'gold' },
+      [AccountType.WALLET]: { label: 'Ví điện tử', color: 'purple' }
     }
-    return typeMap[type as keyof typeof typeMap] || { label: 'Khác', color: 'default' }
-  }
-
-  const getAccountIcon = (type: string) => {
-    const iconMap = {
-      cash: <WalletOutlined />,
-      bank: <BankOutlined />,
-      credit: <CreditCardOutlined />
-    }
-    return iconMap[type as keyof typeof iconMap] || <WalletOutlined />
-  }
-
-  const getAccountColor = (type: string) => {
-    const colorMap = {
-      cash: '#52c41a',
-      bank: '#1890ff',
-      credit: '#f5222d'
-    }
-    return colorMap[type as keyof typeof colorMap] || '#666666'
+    return typeMap[type] || { label: 'Khác', color: 'default' }
   }
 
   const handleAddAccount = () => {
-    console.log('Button clicked, opening modal')
+    setEditingAccount(null)
+    form.resetFields()
+    setIsModalOpen(true)
+  }
+
+  const handleEditAccount = (account: any) => {
+    setEditingAccount(account.id)
+    form.setFieldsValue({
+      name: account.name,
+      type: account.type,
+      amount: account.amount,
+      key: account.key,
+      logo: account.logo
+    })
     setIsModalOpen(true)
   }
 
   const handleModalOk = async () => {
     try {
       const values = await form.validateFields()
-      const newAccount = {
-        id: Date.now(), // Simple ID generation
-        name: values.name,
-        balance: values.balance || 0,
-        type: values.type,
-        icon: getAccountIcon(values.type),
-        color: getAccountColor(values.type)
+      
+      if (editingAccount) {
+        // Update existing account
+        const result = await updateAccount(editingAccount, {
+          name: values.name,
+          type: values.type,
+          amount: values.amount,
+          key: values.key,
+          logo: values.logo || ''
+        })
+        
+        if (result.error) {
+          message.error('Cập nhật tài khoản thất bại!')
+          return
+        }
+      } else {
+        // Create new account
+        const result = await createAccount({
+          name: values.name,
+          type: values.type,
+          amount: values.amount || 0,
+          key: values.key,
+          logo: values.logo || ''
+        })
+        
+        if (result.error) {
+          message.error('Thêm tài khoản thất bại!')
+          return
+        }
       }
       
-      setAccounts([...accounts, newAccount])
       setIsModalOpen(false)
       form.resetFields()
-      message.success('Thêm tài khoản thành công!')
+      setEditingAccount(null)
     } catch (error) {
       console.error('Validation failed:', error)
     }
@@ -109,6 +118,23 @@ export default function Accounts() {
   const handleModalCancel = () => {
     setIsModalOpen(false)
     form.resetFields()
+    setEditingAccount(null)
+  }
+
+  const handleDeleteAccount = async (accountId: string) => {
+    const result = await deleteAccount(accountId)
+    if (result.error) {
+      // Error message đã được hiển thị trong hook
+      return
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spin size="large" tip="Đang tải dữ liệu..." />
+      </div>
+    )
   }
 
   return (
@@ -147,17 +173,29 @@ export default function Accounts() {
           </Col>
           <Col xs={24} sm={12}>
             <Row gutter={16} className="mt-4 sm:mt-0">
-              <Col span={8} className="text-center">
-                <div className="text-xl font-semibold text-blue-600">{items.filter(i => i.type === 'bank').length}</div>
+              <Col span={6} className="text-center">
+                <div className="text-xl font-semibold text-blue-600">
+                  {accounts.filter(i => i.type === AccountType.BANK).length}
+                </div>
                 <Text type="secondary" className="text-sm">Ngân hàng</Text>
               </Col>
-              <Col span={8} className="text-center">
-                <div className="text-xl font-semibold text-green-600">{items.filter(i => i.type === 'cash').length}</div>
+              <Col span={6} className="text-center">
+                <div className="text-xl font-semibold text-green-600">
+                  {accounts.filter(i => i.type === AccountType.CASH).length}
+                </div>
                 <Text type="secondary" className="text-sm">Tiền mặt</Text>
               </Col>
-              <Col span={8} className="text-center">
-                <div className="text-xl font-semibold text-red-600">{items.filter(i => i.type === 'credit').length}</div>
+              <Col span={6} className="text-center">
+                <div className="text-xl font-semibold text-red-600">
+                  {accounts.filter(i => i.type === AccountType.CREDIT).length}
+                </div>
                 <Text type="secondary" className="text-sm">Tín dụng</Text>
+              </Col>
+              <Col span={6} className="text-center">
+                <div className="text-xl font-semibold text-purple-600">
+                  {accounts.filter(i => i.type === AccountType.WALLET).length}
+                </div>
+                <Text type="secondary" className="text-sm">Ví điện tử</Text>
               </Col>
             </Row>
           </Col>
@@ -165,81 +203,99 @@ export default function Accounts() {
       </Card>
 
       {/* Accounts List */}
-      <List
-        grid={{ 
-          gutter: [16, 16], 
-          xs: 1, 
-          sm: 2, 
-          md: 2, 
-          lg: 3, 
-          xl: 4 
-        }}
-        dataSource={items}
-        renderItem={(item) => {
-          const typeTag = getTypeTag(item.type)
-          return (
-            <List.Item>
-              <Card 
-                className="hover:shadow-md transition-shadow duration-200 h-full"
-                bodyStyle={{ padding: '20px' }}
-                actions={[
-                  <Button type="text" icon={<EditOutlined />} key="edit">
-                    Sửa
-                  </Button>,
-                  <Button type="text" danger icon={<DeleteOutlined />} key="delete">
-                    Xóa
-                  </Button>
-                ]}
-              >
-                <div className="flex items-center mb-3">
-                  <Avatar 
-                    size={40} 
-                    style={{ backgroundColor: item.color }}
-                    icon={item.icon}
-                  />
-                  <div className="ml-3 flex-1">
-                    <Title level={5} className="mb-1">{item.name}</Title>
-                    <Tag color={typeTag.color} className="text-xs">
-                      {typeTag.label}
-                    </Tag>
+      {accounts.length > 0 ? (
+        <List
+          grid={{ 
+            gutter: [16, 16], 
+            xs: 1, 
+            sm: 2, 
+            md: 2, 
+            lg: 3, 
+            xl: 4 
+          }}
+          dataSource={accounts}
+          renderItem={(item) => {
+            const typeTag = getTypeTag(item.type)
+            const Icon = getAccountIcon(item.type)
+            const color = getAccountColor(item.type)
+            
+            return (
+              <List.Item>
+                <Card 
+                  className="hover:shadow-md transition-shadow duration-200 h-full"
+                  bodyStyle={{ padding: '20px' }}
+                  actions={[
+                    <Button 
+                      type="text" 
+                      icon={<EditOutlined />} 
+                      key="edit"
+                      onClick={() => handleEditAccount(item)}
+                    >
+                      Sửa
+                    </Button>,
+                    <Popconfirm
+                      title="Xóa tài khoản"
+                      description="Bạn có chắc chắn muốn xóa tài khoản này?"
+                      onConfirm={() => handleDeleteAccount(item.id)}
+                      okText="Xóa"
+                      cancelText="Hủy"
+                      okButtonProps={{ danger: true }}
+                      key="delete"
+                    >
+                      <Button type="text" danger icon={<DeleteOutlined />}>
+                        Xóa
+                      </Button>
+                    </Popconfirm>
+                  ]}
+                >
+                  <div className="flex items-center mb-3">
+                    <Avatar 
+                      size={40} 
+                      style={{ backgroundColor: color }}
+                      icon={<Icon />}
+                    />
+                    <div className="ml-3 flex-1">
+                      <Title level={5} className="mb-1">{item.name}</Title>
+                      <Tag color={typeTag.color} className="text-xs">
+                        {typeTag.label}
+                      </Tag>
+                    </div>
                   </div>
-                </div>
-                
-                <Divider className="my-3" />
-                
-                <div className="text-center">
-                  <Text type="secondary" className="text-sm block mb-1">Số dư</Text>
-                  <div className={`text-xl font-bold ${item.balance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    {formatCurrency(item.balance)}
+                  
+                  <Divider className="my-3" />
+                  
+                  <div className="text-center">
+                    <Text type="secondary" className="text-sm block mb-1">Số dư</Text>
+                    <div className={`text-xl font-bold ${item.amount >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {formatCurrency(item.amount)}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </List.Item>
-          )
-        }}
-      />
-
-      {/* Empty State when no accounts */}
-      {items.length === 0 && (
+                </Card>
+              </List.Item>
+            )
+          }}
+        />
+      ) : (
+        /* Empty State when no accounts */
         <Card className="text-center py-12">
-          <WalletOutlined className="text-6xl text-gray-300 mb-4" />
+          {/* <SaveOutlined className="text-6xl text-gray-300 mb-4" /> */}
           <Title level={4} type="secondary">Chưa có tài khoản nào</Title>
           <Text type="secondary" className="mb-6 block">
             Thêm tài khoản đầu tiên để bắt đầu quản lý tài chính của bạn
           </Text>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleAddAccount}>
+          {/* <Button type="primary" size="large" icon={<PlusOutlined />} onClick={handleAddAccount}>
             Thêm tài khoản đầu tiên
-          </Button>
+          </Button> */}
         </Card>
       )}
 
-      {/* Add Account Modal */}
+      {/* Add/Edit Account Modal */}
       <Modal
-        title="Thêm tài khoản mới"
+        title={editingAccount ? "Chỉnh sửa tài khoản" : "Thêm tài khoản mới"}
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
-        okText="Thêm tài khoản"
+        okText={editingAccount ? "Cập nhật" : "Thêm tài khoản"}
         cancelText="Hủy"
         width={500}
         destroyOnClose
@@ -273,30 +329,70 @@ export default function Accounts() {
               placeholder="Chọn loại tài khoản"
               size="large"
             >
-              <Option value="cash">
-                <Space>
-                  <WalletOutlined style={{ color: '#52c41a' }} />
+              <Option value={AccountType.CASH}>
+                <div className="flex items-center">
+                  <SaveOutlined style={{ color: '#52c41a', marginRight: 8 }} />
                   Tiền mặt
-                </Space>
+                </div>
               </Option>
-              <Option value="bank">
-                <Space>
-                  <BankOutlined style={{ color: '#1890ff' }} />
+              <Option value={AccountType.BANK}>
+                <div className="flex items-center">
+                  <SaveOutlined style={{ color: '#1890ff', marginRight: 8 }} />
                   Ngân hàng
-                </Space>
+                </div>
               </Option>
-              <Option value="credit">
-                <Space>
-                  <CreditCardOutlined style={{ color: '#f5222d' }} />
+              <Option value={AccountType.CREDIT}>
+                <div className="flex items-center">
+                  <SaveOutlined style={{ color: '#f5222d', marginRight: 8 }} />
                   Thẻ tín dụng
-                </Space>
+                </div>
+              </Option>
+              <Option value={AccountType.SAVING}>
+                <div className="flex items-center">
+                  <SaveOutlined style={{ color: '#faad14', marginRight: 8 }} />
+                  Tiết kiệm
+                </div>
+              </Option>
+              <Option value={AccountType.WALLET}>
+                <div className="flex items-center">
+                  <SaveOutlined style={{ color: '#722ed1', marginRight: 8 }} />
+                  Ví điện tử
+                </div>
               </Option>
             </Select>
           </Form.Item>
 
           <Form.Item
+            label="Mã tài khoản (Key)"
+            name="key"
+            rules={[
+              { required: true, message: 'Vui lòng nhập mã tài khoản!' },
+              { 
+                pattern: /^[A-Z0-9_]+$/, 
+                message: 'Mã chỉ được chứa chữ in hoa, số và dấu gạch dưới!' 
+              }
+            ]}
+          >
+            <Input 
+              placeholder="Ví dụ: VCB, CASH, MOMO..."
+              size="large"
+              style={{ textTransform: 'uppercase' }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Logo URL (tùy chọn)"
+            name="logo"
+          >
+            <Input 
+              placeholder="https://example.com/logo.png"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
             label="Số dư ban đầu"
-            name="balance"
+            name="amount"
             rules={[
               { required: true, message: 'Vui lòng nhập số dư ban đầu!' }
             ]}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   Form,
@@ -11,9 +11,14 @@ import {
   InputNumber,
   Table,
   Empty,
+  Spin,
 } from "antd";
 import { SaveOutlined, PlusOutlined } from "@ant-design/icons";
 import { currencyUnits } from "../utils/system-constants";
+import { useAccounts } from "../services/accounts/useAccounts";
+import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../services/settings/useSettings";
+import { formatCurrency } from "../services/settings/enum/currency.enum";
 
 const { Title, Text } = Typography;
 
@@ -22,39 +27,75 @@ type Account = {
   name: string;
 };
 
-export default function SettingsPage() {
+export default function Settings() {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { accounts } = useAccounts(user.id);
+  const [selectedAccount, setSelectedAccount] = useState<string | undefined>(
+    undefined
+  );
+  const { settings, loading, saving, saveSettings } = useSettings();
 
-  // Giả lập tài khoản từ DB
-  const [accounts, setAccounts] = useState<Account[]>([
-    { id: "1", name: "Tiền mặt" },
-    { id: "2", name: "Ngân hàng" },
-  ]);
+  // Sync settings to form when loaded
+  useEffect(() => {
+    if (settings) {
+      setSelectedAccount(settings.default_account_id);
+      form.setFieldsValue({
+        currency: settings.currency,
+      });
+
+      // Load allocations vào form
+      if (settings.allocations && settings.allocations.length > 0) {
+        const allocationsFormData = settings.allocations.map((alloc) => ({
+          amount: alloc.amount,
+        }));
+        form.setFieldsValue({
+          allocations: allocationsFormData,
+        });
+      }
+    } else {
+      // Set default values if no settings
+      form.setFieldsValue({
+        currency: currencyUnits[0].value,
+      });
+    }
+  }, [settings, form]);
 
   const handleSave = async () => {
     try {
-      setLoading(true);
       const values = await form.validateFields();
 
-      // Validate tổng phân bổ
-      const allocations = values.allocations || [];
-      const total = allocations.reduce((sum: number, a: any) => sum + (a.percent || 0), 0);
-      if (total !== 100) {
-        message.error("Tổng phân bổ phải bằng 100%");
-        setLoading(false);
+      if (!selectedAccount) {
+        message.warning("Vui lòng chọn tài khoản mặc định");
         return;
       }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      message.success("Cài đặt đã được lưu thành công!");
+      // Lấy allocations từ form và map với accountId
+      const allocations = accounts.map((account, index) => ({
+        accountId: account.id,
+        amount: values.allocations?.[index]?.amount || 0,
+      }));
+
+      await saveSettings({
+        default_account_id: selectedAccount,
+        currency: values.currency,
+        allocations: allocations,
+      });
+
+      message.success("Lưu cài đặt thành công");
     } catch (error) {
+      console.error("Validation failed:", error);
       message.error("Có lỗi xảy ra khi lưu cài đặt");
-    } finally {
-      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   // Cột cho bảng phân bổ
   const columns = [
@@ -64,18 +105,36 @@ export default function SettingsPage() {
       key: "name",
     },
     {
-      title: "Số tiền",
+      title: "Số tiền phân bổ",
       dataIndex: "amount",
       key: "amount",
-      render: (_: any, record: Account, index: number) => (
-        <Form.Item
-          name={["allocations", index, "amount"]}
-          initialValue={0}
-          rules={[{ required: true, message: "Nhập số tiền" }]}
-        >
-          <InputNumber />
-        </Form.Item>
-      ),
+      render: (_: any, record: Account, index: number) => {
+        // Tìm allocation cho account này
+        const existingAllocation = settings?.allocations?.find(
+          (alloc) => alloc.accountId === record.id
+        );
+
+        return (
+          <Form.Item
+            name={["allocations", index, "amount"]}
+            initialValue={existingAllocation?.amount || 0}
+            rules={[
+              { required: true, message: "Nhập số tiền" },
+              { type: "number", min: 0, message: "Số tiền phải >= 0" },
+            ]}
+            style={{ marginBottom: 0 }}
+          >
+            <InputNumber
+              style={{ width: "100%" }}
+              min={0}
+              formatter={(value) =>
+                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+              }
+              addonAfter={settings?.currency}
+            />
+          </Form.Item>
+        );
+      },
     },
   ];
 
@@ -98,41 +157,57 @@ export default function SettingsPage() {
             <Form layout="vertical" form={form}>
               <Row gutter={16}>
                 <Col xs={24} sm={8}>
-                  <Form.Item label="Tài khoản mặc định">
-                    <Select size="large" defaultValue="cash">
-                      <Select.Option value="cash">Tiền mặt</Select.Option>
-                      <Select.Option value="bank">Ngân hàng</Select.Option>
-                      <Select.Option value="credit">Thẻ tín dụng</Select.Option>
+                  <Form.Item
+                    label="Tài khoản mặc định"
+                    rules={[
+                      { required: true, message: "Vui lòng chọn tài khoản" },
+                    ]}
+                  >
+                    <Select
+                      size="large"
+                      placeholder="Chọn tài khoản"
+                      value={selectedAccount}
+                      onChange={(value) => setSelectedAccount(value)}
+                    >
+                      {accounts.map((a) => (
+                        <Select.Option key={a.id} value={a.id}>
+                          {a.name}
+                        </Select.Option>
+                      ))}
                     </Select>
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={8}>
-                  <Form.Item label="Đơn vị tiền tệ" name="currency">
+                  <Form.Item
+                    label="Đơn vị tiền tệ"
+                    name="currency"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng chọn đơn vị tiền tệ",
+                      },
+                    ]}
+                  >
                     <Select
                       size="large"
-                      defaultValue={currencyUnits[0].value}
+                      placeholder="Chọn đơn vị tiền tệ"
                       options={currencyUnits}
                     />
                   </Form.Item>
                 </Col>
               </Row>
-
-              {/* <Form.Item label="Ngân sách hàng tháng" name="monthlyBudget">
-                <InputNumber
-                  size="large"
-                  style={{ width: "30%" }}
-                  defaultValue={10000000}
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  addonAfter="VND"
-                />
-              </Form.Item> */}
             </Form>
           </Card>
 
           {/* Phân bổ thu nhập */}
-          <Card title="Phân bổ thu nhập vào tài khoản">
+          <Card
+            title="Phân bổ thu nhập vào tài khoản"
+            extra={
+              <Text type="secondary" style={{ fontSize: "14px" }}>
+                Tự động phân bổ khi có thu nhập
+              </Text>
+            }
+          >
             {accounts.length > 0 ? (
               <Form form={form} layout="vertical">
                 <Table
@@ -140,6 +215,25 @@ export default function SettingsPage() {
                   columns={columns}
                   rowKey="id"
                   pagination={false}
+                  summary={(pageData) => {
+                    const values = form.getFieldsValue();
+                    const total = pageData.reduce((sum, _, index) => {
+                      return sum + (values.allocations?.[index]?.amount || 0);
+                    }, 0);
+
+                    return (
+                      <Table.Summary.Row>
+                        <Table.Summary.Cell index={0}>
+                          <strong>Tổng</strong>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={1}>
+                          <strong>
+                            {formatCurrency(total, settings?.currency || "VND")}
+                          </strong>
+                        </Table.Summary.Cell>
+                      </Table.Summary.Row>
+                    );
+                  }}
                 />
               </Form>
             ) : (
@@ -147,9 +241,6 @@ export default function SettingsPage() {
                 description="Chưa có tài khoản nào"
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               >
-                <Button type="primary" icon={<PlusOutlined />}>
-                  Tạo tài khoản mới
-                </Button>
               </Empty>
             )}
           </Card>
@@ -162,7 +253,7 @@ export default function SettingsPage() {
           type="primary"
           size="large"
           icon={<SaveOutlined />}
-          loading={loading}
+          loading={saving}
           onClick={handleSave}
           className="px-8"
           style={{ marginTop: "10px" }}

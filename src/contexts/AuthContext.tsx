@@ -19,7 +19,6 @@ type AuthContextType = {
   resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   getUser: () => any;
-  updateUserSettings: (settings: any) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -113,18 +112,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const getUser = () => user;
 
-  const updateUserSettings = async (settings: any) => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("user_settings")
-      .upsert({ user_id: user.id, ...settings })
-      .select()
-      .single();
-
-    if (error) throw error;
-    setUserSettings(data);
-  };
-
   const value: AuthContextType = {
     user,
     session,
@@ -135,7 +122,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     resetPassword,
     logout,
     getUser,
-    updateUserSettings,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
