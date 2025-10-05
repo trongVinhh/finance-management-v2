@@ -1,10 +1,12 @@
 // src/services/transactions/useTransactions.ts
 import { useState, useEffect } from "react";
-import { message } from "antd";
+import { App, message } from "antd";
 import { supabase } from "../../lib/supabase";
 import dayjs from "dayjs";
 import { useAccounts } from "../accounts/useAccounts";
 import { useSettings } from "../settings/useSettings";
+import { notify } from "../../utils/system-helper";
+import { useNotify } from "../../contexts/NotifycationContext";
 
 export interface Transaction {
   id: string;
@@ -63,6 +65,7 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const notify = useNotify();
 
   const loadTransactions = async () => {
     try {
@@ -112,10 +115,7 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
         user_id: user.id,
         date: data.date,
         desc: data.desc,
-        amount:
-          data.type === "expense"
-            ? -Math.abs(data.amount)
-            : Math.abs(data.amount),
+        amount: data.amount,
         type: data.type,
         category: data.category,
         account_id: data.account_id,
@@ -127,17 +127,34 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
         const newBalance = account!.amount - data.amount;
         updateBalance(data.account_id, newBalance);
       } else {
-        const allocations = settings?.allocations;
-        if (allocations) {
-          for (const { amount, accountId } of allocations!) {
-            const account = getAccountById(accountId);
-            const newAmount = account!.amount + amount;
-            updateBalance(accountId, newAmount);
-          }
-        }
+        if (transactionData.category === "Lương") {
+          const allocations = settings?.allocations;
+          let amountAllocated = 0;
+          if (allocations) {
+            let total = 0;
+            for (const { amount } of allocations) {
+              total += amount;
+            }
 
-        const newBalance = account!.amount + data.amount;
-        updateBalance(data.account_id, newBalance);
+            if (total < data.amount) {
+              notify("error", "Thất bại!", "Số tiền phân bổ vượt quá tổng thu nhập!");
+              return null;
+            } else if (total > data.amount) {
+              notify("error", "Thất bại!", "Số tiền phân bổ vượt ít hơn tổng thu nhập!");
+              return null;
+            } else {
+              for (const { amount, accountId } of allocations) {
+                const account = getAccountById(accountId);
+                const newAmount = account!.amount + amount;
+                amountAllocated += amount;
+                updateBalance(accountId, newAmount);
+              }
+            }
+          }
+        } else {
+          const newBalance = account!.amount + data.amount;
+          await updateBalance(data.account_id, newBalance);
+        }
       }
 
       const { data: newTransaction, error } = await supabase
@@ -231,19 +248,39 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
 
       // Update transaction, amount of account
       const transaction = getTransactionById(id);
-      const account = getAccountById(transaction!.account_id);
-
-      if (!transaction || !account)
-        throw new Error("Transaction or account not found");
-
-      let newBalance = account.amount;
-      if (transaction.type === "expense" || transaction.type === "suddenly") {
-        newBalance += transaction.amount;
+      if (transaction?.category == "Lương") {
+        const allocations = settings?.allocations;
+        let amountNonAllocated = transaction.amount;
+        let amountAllocated = 0;
+        if (allocations) {
+          for (const { amount, accountId } of allocations) {
+            const account = getAccountById(accountId);
+            const newAmount = account!.amount - amount;
+            amountAllocated += amount;
+            amountNonAllocated -= amountAllocated;
+            updateBalance(accountId, newAmount);
+          }
+        }
+        if (amountNonAllocated > 0) {
+          const defaultAccount = getAccountById(settings!.default_account_id);
+          const newAmount = defaultAccount!.amount - amountNonAllocated;
+          updateBalance(settings!.default_account_id, newAmount);
+        }
       } else {
-        newBalance -= transaction.amount; // Hoàn tiền đã cộng
-      }
+        const account = getAccountById(transaction!.account_id);
 
-      updateBalance(transaction.account_id, newBalance);
+        if (!transaction || !account)
+          throw new Error("Transaction or account not found");
+
+        let newBalance = account.amount;
+        if (transaction.type === "expense" || transaction.type === "suddenly") {
+          newBalance += transaction.amount;
+        } else {
+          newBalance -= transaction.amount; // Hoàn tiền đã cộng
+        }
+
+        updateBalance(transaction.account_id, newBalance);
+      }
 
       const { error } = await supabase
         .from("transactions")
@@ -306,6 +343,7 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
 
   return {
     transactions,
+
     loading,
     creating,
     updating,

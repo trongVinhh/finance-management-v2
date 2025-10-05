@@ -15,9 +15,13 @@ import {
 } from "antd";
 import {
   DollarOutlined,
-  PlusOutlined,
+  FilterOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
+import useIncome from "../services/incomes/useIncome";
+import { formatCurrency } from "../services/settings/enum/currency.enum";
+import { useSettings } from "../services/settings/useSettings";
+import dayjs from "dayjs";
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -31,38 +35,28 @@ type Income = {
 };
 
 export default function Income() {
-  const [incomes, setIncomes] = useState<Income[]>([
-    {
-      id: "1",
-      type: "Lương",
-      amount: 15000000,
-      note: "Lương tháng 9",
-      created_at: "2025-09-05",
-    },
-    {
-      id: "2",
-      type: "Thưởng",
-      amount: 2000000,
-      note: "Thưởng dự án",
-      created_at: "2025-09-10",
-    },
-    {
-      id: "3",
-      type: "Vay Mượn",
-      amount: 5000000,
-      note: "Anh A trả nợ",
-      created_at: "2025-09-20",
-    },
-  ]);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // State filter
+  const {
+    incomes,
+    allIncomes,
+    isModalOpen,
+    filters,
+    summary,
+    incomeTypes,
+    incomeByType,
+    setIsModalOpen,
+    updateFilters, // Thêm này
+    resetFilters,
+  } = useIncome();
+  const { settings } = useSettings();
   const [searchText, setSearchText] = useState("");
-  const [selectedType, setSelectedType] = useState<string | undefined>();
+  const [selectedCategory, setSelectedCategory] = useState<
+    string | undefined
+  >();
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
-
-  const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
+  const totalIncome =
+    allIncomes.length > 0
+      ? allIncomes.reduce((sum, i) => sum + i.amount, 0)
+      : 0;
 
   const columns = [
     { title: "Loại", dataIndex: "type" },
@@ -71,23 +65,31 @@ export default function Income() {
       dataIndex: "amount",
       render: (v: number) => (
         <Text strong style={{ color: "#52c41a" }}>
-          {v.toLocaleString()} đ
+          {formatCurrency(v, settings?.currency || "VND")}
         </Text>
       ),
     },
-    { title: "Ghi chú", dataIndex: "note" },
-    { title: "Ngày", dataIndex: "created_at" },
+    { title: "Ghi chú", dataIndex: "desc" },
+    {
+      title: "Ngày",
+      dataIndex: "created_at",
+      render: (date: string) => (
+        <div className="flex items-center">
+          {dayjs(date).format("DD/MM/YYYY")}
+        </div>
+      ),
+    },
   ];
 
   // Lọc dữ liệu
   const filteredIncomes = incomes.filter((i) => {
     const matchSearch =
-      !searchText || i.note?.toLowerCase().includes(searchText.toLowerCase());
-    const matchType = !selectedType || i.type === selectedType;
+      !searchText || i.desc?.toLowerCase().includes(searchText.toLowerCase());
+    const matchCategory = !selectedCategory || i.category === selectedCategory;
     const matchDate =
       !dateRange ||
-      (i.created_at >= dateRange[0] && i.created_at <= dateRange[1]);
-    return matchSearch && matchType && matchDate;
+      (i.created_at! >= dateRange[0] && i.created_at! <= dateRange[1]);
+    return matchSearch && matchCategory && matchDate;
   });
 
   return (
@@ -102,7 +104,7 @@ export default function Income() {
 
       {/* Summary */}
       <Row gutter={[16, 16]} className="mb-6">
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={12}>
           <Card>
             <Statistic
               title="Tổng thu nhập"
@@ -111,60 +113,60 @@ export default function Income() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={12}>
           <Card>
             <Statistic title="Số giao dịch" value={incomes.length} />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
+        {/* <Col xs={24} sm={8}>
           <Card>
             <Statistic
               title="Thu nhập trung bình"
               value={Math.round(totalIncome / incomes.length)}
             />
           </Card>
-        </Col>
+        </Col> */}
       </Row>
 
       {/* Bộ lọc */}
-      <Card className="mb-6 shadow-sm">
-        <div className="flex flex-wrap gap-2 md:gap-3 items-center">
+      <Card style={{ marginBottom: "24px" }}>
+        <Space wrap style={{ width: "100%" }}>
           <Input
             placeholder="Tìm kiếm ghi chú..."
             prefix={<SearchOutlined />}
             allowClear
-            style={{ width: 200, marginRight: "10px" }}
-            onChange={(e) => setSearchText(e.target.value)}
+            value={filters.searchText}
+            style={{ width: 200 }}
+            onChange={(e) => updateFilters({ searchText: e.target.value })}
           />
 
           <Select
             placeholder="Chọn loại"
             allowClear
-            className="w-full md:w-40"
-            style={{ marginRight: "10px" }}
-            options={[
-              { label: "Lương", value: "Lương" },
-              { label: "Thưởng", value: "Thưởng" },
-              { label: "Vay Mượn", value: "Vay Mượn" },
-            ]}
-            onChange={(val) => setSelectedType(val)}
+            value={filters.selectedType}
+            style={{ width: 200 }}
+            options={incomeTypes} // Dùng từ hook
+            onChange={(val) => updateFilters({ selectedType: val })}
           />
 
           <RangePicker
-            className="w-full md:w-auto"
-            style={{ marginRight: "10px" }}
+            value={filters.dateRange ? [dayjs(filters.dateRange[0]), dayjs(filters.dateRange[1])] : null}
             onChange={(dates) =>
-              setDateRange(
-                dates
-                  ? [
-                      dates[0]!.format("YYYY-MM-DD"),
-                      dates[1]!.format("YYYY-MM-DD"),
-                    ]
-                  : null
-              )
+              updateFilters({
+                dateRange: dates
+                  ? [dates[0]!.format("YYYY-MM-DD"), dates[1]!.format("YYYY-MM-DD")]
+                  : null,
+              })
             }
           />
-        </div>
+
+          <Button
+            icon={<FilterOutlined />}
+            onClick={resetFilters}
+          >
+            Xóa bộ lọc
+          </Button>
+        </Space>
       </Card>
 
       {/* Table */}

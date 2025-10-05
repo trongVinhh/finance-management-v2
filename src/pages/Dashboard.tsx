@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Card,
   Row,
@@ -10,6 +9,7 @@ import {
   Tag,
   List,
   Select,
+  Statistic,
 } from "antd";
 import {
   ArrowUpOutlined,
@@ -17,107 +17,33 @@ import {
   WalletOutlined,
   EyeOutlined,
   RiseOutlined,
+  DollarOutlined,
+  SafetyOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import CategoryPieChart from "../components/CategoryPieChart";
+import useDashboard from "../services/dashboard/useDashboard";
+import { useSettings } from "../services/settings/useSettings";
+import { formatCurrency } from "../services/settings/enum/currency.enum";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const mockData = {
-  summary: {
-    totalIncome: 15000000,
-    totalExpense: 8500000,
-    balance: 6500000,
-    savingsRate: 43.3,
-  },
-  recentTransactions: [
-    {
-      id: 1,
-      date: "2024-01-15",
-      description: "Lương tháng 1",
-      amount: 8000000,
-      type: "income",
-      category: "Lương",
-    },
-    {
-      id: 2,
-      date: "2024-02-14",
-      description: "Mua sắm",
-      amount: -500000,
-      type: "expense",
-      category: "Mua sắm",
-    },
-    {
-      id: 3,
-      date: "2024-03-13",
-      description: "Ăn uống",
-      amount: -200000,
-      type: "expense",
-      category: "Ăn uống",
-    },
-    {
-      id: 4,
-      date: "2024-04-12",
-      description: "Thuê nhà",
-      amount: -3000000,
-      type: "expense",
-      category: "Nhà ở",
-    },
-    {
-      id: 5,
-      date: "2024-04-10",
-      description: "Freelance",
-      amount: 2000000,
-      type: "income",
-      category: "Freelance",
-    },
-  ],
-  categoryStats: [
-    {
-      category: "Ăn uống",
-      amount: 1200000,
-      percentage: 14.1,
-      color: "#ff4d4f",
-    },
-    { category: "Nhà ở", amount: 3000000, percentage: 35.3, color: "#1890ff" },
-    { category: "Mua sắm", amount: 800000, percentage: 9.4, color: "#52c41a" },
-    {
-      category: "Giao thông",
-      amount: 500000,
-      percentage: 5.9,
-      color: "#faad14",
-    },
-    { category: "Giải trí", amount: 600000, percentage: 7.1, color: "#722ed1" },
-    { category: "Khác", amount: 2400000, percentage: 28.2, color: "#8c8c8c" },
-  ],
-  monthlyTrend: [
-    { month: "Tháng 10", income: 12000000, expense: 7000000 },
-    { month: "Tháng 11", income: 13000000, expense: 7500000 },
-    { month: "Tháng 12", income: 14000000, expense: 8000000 },
-    { month: "Tháng 1", income: 15000000, expense: 8500000 },
-  ],
-};
-
 export default function Dashboard() {
-  const [filterMode, setFilterMode] = useState<"month" | "year" | "all">("all");
+  const {
+    filterMode,
+    transactions,
+    isLoading,
+    summary,
+    categoryExpenseStats,
+    categoryIncomeStats,
+    monthlyTrend,
+    setFilterMode,
+    refreshData,
+  } = useDashboard();
+  const { settings } = useSettings();
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-
-  // Filter giao dịch theo tháng/năm
-  const filteredTransactions = mockData.recentTransactions.filter((t) => {
-    const d = dayjs(t.date);
-    if (filterMode === "month") {
-      return d.isSame(dayjs(), "month");
-    } else if (filterMode === "year") {
-      return d.isSame(dayjs(), "year");
-    }
-    return true; // all
-  });
+  console.log("transactions", transactions);
 
   const transactionColumns = [
     {
@@ -125,13 +51,20 @@ export default function Dashboard() {
       dataIndex: "date",
       key: "date",
       render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+      responsive: ["sm"] as any,
     },
-    { title: "Mô tả", dataIndex: "description", key: "description" },
+    {
+      title: "Mô tả",
+      dataIndex: "desc",
+      key: "desc",
+      ellipsis: true,
+    },
     {
       title: "Danh mục",
       dataIndex: "category",
       key: "category",
       render: (category: string) => <Tag color="blue">{category}</Tag>,
+      responsive: ["md"] as any,
     },
     {
       title: "Số tiền",
@@ -139,30 +72,30 @@ export default function Dashboard() {
       key: "amount",
       render: (amount: number) => (
         <Text type={amount > 0 ? "success" : "danger"}>
-          {formatCurrency(Math.abs(amount))}
+          {formatCurrency(Math.abs(amount), settings?.currency || "VND")}
         </Text>
       ),
     },
   ];
 
   return (
-    <div className="dashboard-container" style={{ padding: "24px" }}>
+    <div style={{ padding: "16px", margin: "0 auto" }}>
       {/* Header + Filter */}
-      <Card style={{ marginBottom: "24px" }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
+      <Card style={{ marginBottom: "16px" }}>
+        <Row justify="space-between" align="middle" gutter={[16, 16]}>
+          <Col xs={24} sm={12}>
+            <Title level={2} style={{ margin: 0, fontSize: "clamp(1.25rem, 5vw, 1.75rem)" }}>
               Dashboard Tài Chính
             </Title>
-            <Text type="secondary">
+            <Text type="secondary" style={{ fontSize: "clamp(0.75rem, 3vw, 0.875rem)" }}>
               Tổng quan về tình hình tài chính của bạn
             </Text>
           </Col>
-          <Col>
+          <Col xs={24} sm={12} style={{ textAlign: "right" }}>
             <Select
               value={filterMode}
               onChange={(val) => setFilterMode(val)}
-              style={{ width: 160 }}
+              style={{ width: "100%", maxWidth: 160 }}
             >
               <Option value="month">Tháng này</Option>
               <Option value="year">Năm nay</Option>
@@ -171,104 +104,157 @@ export default function Dashboard() {
           </Col>
         </Row>
       </Card>
-      {/* ... giữ nguyên các phần khác như summary, charts ... */}
-      {/* Charts và Phân tích */}{" "}
-      <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-        {" "}
+
+      {/* Summary Cards - Responsive */}
+      <Row gutter={[16, 16]} style={{ marginBottom: "16px" }}>
+        <Col xs={12} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Tổng Thu Nhập"
+              value={summary.totalIncome}
+              precision={0}
+              valueStyle={{ color: "#3f8600", fontSize: "clamp(1rem, 4vw, 1.5rem)" }}
+              prefix={<ArrowUpOutlined />}
+              formatter={(value) =>
+                formatCurrency(Number(value), settings?.currency || "VND")
+              }
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Tổng Chi Tiêu"
+              value={summary.totalExpense}
+              precision={0}
+              valueStyle={{ color: "#cf1322", fontSize: "clamp(1rem, 4vw, 1.5rem)" }}
+              prefix={<ArrowDownOutlined />}
+              formatter={(value) =>
+                formatCurrency(Number(value), settings?.currency || "VND")
+              }
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Số Dư"
+              value={summary.balance}
+              precision={0}
+              valueStyle={{ color: "#1890ff", fontSize: "clamp(1rem, 4vw, 1.5rem)" }}
+              prefix={<DollarOutlined />}
+              formatter={(value) =>
+                formatCurrency(Number(value), settings?.currency || "VND")
+              }
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Tỷ Lệ Tiết Kiệm"
+              value={summary.savingsRate}
+              precision={1}
+              valueStyle={{ color: "#52c41a", fontSize: "clamp(1rem, 4vw, 1.5rem)" }}
+              prefix={<SafetyOutlined />}
+              suffix="%"
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Charts và Phân tích */}
+      <Row gutter={[16, 16]} style={{ marginBottom: "16px" }}>
         <Col xs={24} lg={12}>
-          {" "}
           <CategoryPieChart
             title="Phân bổ chi tiêu theo danh mục"
-            data={mockData.categoryStats}
-          />{" "}
-        </Col>{" "}
+            data={categoryExpenseStats}
+          />
+        </Col>
         <Col xs={24} lg={12}>
-          {" "}
-          <Card
-            title="Xu hướng thu chi hàng tháng"
-            extra={<RiseOutlined style={{ fontSize: 18 }} />}
-          >
-            {" "}
-            <List
-              dataSource={mockData.monthlyTrend}
-              renderItem={(item) => (
-                <List.Item>
-                  {" "}
-                  <Row style={{ width: "100%" }}>
-                    {" "}
-                    <Col span={6}>
-                      <Text strong>{item.month}</Text>
-                    </Col>{" "}
-                    <Col span={9}>
-                      {" "}
-                      <Space direction="vertical" size={0}>
-                        {" "}
-                        <Text type="success">
-                          {" "}
-                          <ArrowUpOutlined /> Thu: {formatCurrency(
-                            item.income
-                          )}{" "}
-                        </Text>{" "}
-                        <Text type="danger">
-                          {" "}
-                          <ArrowDownOutlined /> Chi:{" "}
-                          {formatCurrency(item.expense)}{" "}
-                        </Text>{" "}
-                      </Space>{" "}
-                    </Col>{" "}
-                    <Col span={9}>
-                      {" "}
-                      <Text type="secondary">
-                        {" "}
-                        Tiết kiệm: {formatCurrency(
-                          item.income - item.expense
-                        )}{" "}
-                      </Text>{" "}
-                    </Col>{" "}
-                  </Row>{" "}
-                </List.Item>
-              )}
-            />{" "}
-          </Card>{" "}
-        </Col>{" "}
+          <CategoryPieChart
+            title="Phân bổ thu nhập theo danh mục"
+            data={categoryIncomeStats}
+          />
+        </Col>
       </Row>
+
+      {/* Xu hướng thu chi - Optional, có thể bật lại */}
+      {monthlyTrend && monthlyTrend.length > 0 && (
+        <Card
+          title="Xu hướng thu chi hàng tháng"
+          extra={<RiseOutlined style={{ fontSize: 18 }} />}
+          style={{ marginBottom: "16px" }}
+        >
+          <List
+            dataSource={monthlyTrend}
+            renderItem={(item) => (
+              <List.Item>
+                <Row style={{ width: "100%" }} gutter={[8, 8]}>
+                  <Col xs={24} sm={6}>
+                    <Text strong>{item.month}</Text>
+                  </Col>
+                  <Col xs={12} sm={9}>
+                    <Space direction="vertical" size={0}>
+                      <Text type="success" style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}>
+                        <ArrowUpOutlined /> Thu:{" "}
+                        {formatCurrency(item.income, settings?.currency || "VND")}
+                      </Text>
+                      <Text type="danger" style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}>
+                        <ArrowDownOutlined /> Chi:{" "}
+                        {formatCurrency(item.expense, settings?.currency || "VND")}
+                      </Text>
+                    </Space>
+                  </Col>
+                  <Col xs={12} sm={9}>
+                    <Text type="secondary" style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}>
+                      Tiết kiệm:{" "}
+                      {formatCurrency(
+                        item.income - item.expense,
+                        settings?.currency || "VND"
+                      )}
+                    </Text>
+                  </Col>
+                </Row>
+              </List.Item>
+            )}
+          />
+        </Card>
+      )}
+
       {/* Giao dịch gần đây */}
       <Card title="Giao dịch gần đây">
         <Table
-          dataSource={filteredTransactions}
+          dataSource={transactions}
           columns={transactionColumns}
-          pagination={{ pageSize: 5 }}
+          pagination={{ pageSize: 5, simple: true }}
           size="small"
           rowKey="id"
+          scroll={{ x: 400 }}
         />
       </Card>
-      <Card title="Thao tác nhanh" style={{ marginTop: "24px" }}>
-        <Row gutter={[16, 16]}>
+
+      {/* Thao tác nhanh - Optional */}
+      <Card title="Thao tác nhanh" style={{ marginTop: "16px" }}>
+        <Row gutter={[8, 8]}>
           <Col xs={12} sm={6}>
-            {" "}
-            <Button type="primary" block icon={<ArrowUpOutlined />}>
-              {" "}
-              Thêm thu nhập{" "}
-            </Button>{" "}
+            <Button type="primary" block icon={<ArrowUpOutlined />} size="middle">
+              Thêm thu nhập
+            </Button>
           </Col>
           <Col xs={12} sm={6}>
-            {" "}
-            <Button danger block icon={<ArrowDownOutlined />}>
-              {" "}
-              Thêm chi tiêu{" "}
-            </Button>{" "}
+            <Button danger block icon={<ArrowDownOutlined />} size="middle">
+              Thêm chi tiêu
+            </Button>
           </Col>
           <Col xs={12} sm={6}>
-            {" "}
-            <Button block icon={<WalletOutlined />}>
-              {" "}
-              Quản lý tài khoản{" "}
-            </Button>{" "}
-          </Col>{" "}
+            <Button block icon={<WalletOutlined />} size="middle">
+              Quản lý TK
+            </Button>
+          </Col>
           <Col xs={12} sm={6}>
-            <Button block icon={<EyeOutlined />}>
-              {" "}
-              Xem báo cáo{" "}
+            <Button block icon={<EyeOutlined />} size="middle">
+              Xem báo cáo
             </Button>
           </Col>
         </Row>

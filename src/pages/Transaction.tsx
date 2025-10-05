@@ -32,7 +32,7 @@ import {
   ArrowDownOutlined,
   CalendarOutlined,
 } from "@ant-design/icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
@@ -65,7 +65,7 @@ export default function Transactions() {
   const { user } = useAuth();
   const { accounts } = useAccounts(user?.id);
   const { categories } = useCategories(user?.id);
-  const { settings } = useSettings()
+  const { settings } = useSettings();
   const {
     transactions,
     loading,
@@ -103,14 +103,8 @@ export default function Transactions() {
   const totalIncome = getTotalIncome();
   const totalExpense = getTotalExpense();
   const netAmount = getNetAmount();
-
-  // const formatCurrency = (amount: number): string => {
-  //   return new Intl.NumberFormat("vi-VN", {
-  //     style: "currency",
-  //     currency: "VND",
-  //     minimumFractionDigits: 0,
-  //   }).format(Math.abs(amount));
-  // };
+  const type = Form.useWatch("type", form);
+  const category = Form.useWatch("category", form);
 
   const getTypeIcon = (type: "income" | "expense") => {
     return type === "income" ? (
@@ -211,6 +205,13 @@ export default function Transactions() {
     return account?.name || accountId;
   };
 
+  useEffect(() => {
+    if (!(type === "income" && category === "Lương")) {
+      // Set account mặc định khi là Lương
+      form.setFieldValue("account_id", settings?.default_account_id);
+    }
+  }, [type, category, settings, form]);
+
   const columns: ColumnsType<Transaction> = [
     {
       title: "Ngày",
@@ -221,7 +222,6 @@ export default function Transactions() {
         new Date(a.date).getTime() - new Date(b.date).getTime(),
       render: (date: string) => (
         <div className="flex items-center">
-          <CalendarOutlined className="mr-2 text-gray-400" />
           {dayjs(date).format("DD/MM/YYYY")}
         </div>
       ),
@@ -284,7 +284,7 @@ export default function Transactions() {
             style={{ color: getTypeColor(amount) }}
           >
             {amount > 0 ? "+" : ""}
-            {formatCurrency(amount, settings?.currency || 'VND')}
+            {formatCurrency(amount, settings?.currency || "VND")}
           </div>
         </div>
       ),
@@ -324,13 +324,11 @@ export default function Transactions() {
     },
   ];
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex justify-center items-center min-h-screen">
-  //       <Spin size="large" />
-  //     </div>
-  //   )
-  // }
+  useEffect(() => {
+    if (type === "income" && !category) {
+      form.setFieldValue("category", "Lương");
+    }
+  }, [type, category, form]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen" style={{ padding: "24px" }}>
@@ -379,7 +377,9 @@ export default function Transactions() {
             <Statistic
               title="Thu nhập"
               value={totalIncome}
-              formatter={(value) => formatCurrency(Number(value), settings?.currency || 'VND')}
+              formatter={(value) =>
+                formatCurrency(Number(value), settings?.currency || "VND")
+              }
               valueStyle={{ color: "#52c41a" }}
               prefix={<ArrowUpOutlined />}
             />
@@ -390,7 +390,9 @@ export default function Transactions() {
             <Statistic
               title="Chi tiêu"
               value={totalExpense}
-              formatter={(value) => formatCurrency(Number(value), settings?.currency || 'VND')}
+              formatter={(value) =>
+                formatCurrency(Number(value), settings?.currency || "VND")
+              }
               valueStyle={{ color: "#f5222d" }}
               prefix={<ArrowDownOutlined />}
             />
@@ -401,7 +403,9 @@ export default function Transactions() {
             <Statistic
               title="Số dư ròng"
               value={netAmount}
-              formatter={(value) => formatCurrency(Number(value), settings?.currency || 'VND')}
+              formatter={(value) =>
+                formatCurrency(Number(value), settings?.currency || "VND")
+              }
               valueStyle={{ color: netAmount >= 0 ? "#52c41a" : "#f5222d" }}
               prefix={<SwapOutlined />}
             />
@@ -429,7 +433,7 @@ export default function Transactions() {
               value={selectedCategory || undefined}
               onChange={setSelectedCategory}
               className="w-full"
-              style={{ width: "200px" }}
+              style={{ width: "160px" }}
             >
               {allCategories.map((cat) => (
                 <Option key={cat} value={cat}>
@@ -485,6 +489,7 @@ export default function Transactions() {
       </Card>
 
       {/* Add/Edit Transaction Modal */}
+
       <Modal
         title={editingTransaction ? "Sửa giao dịch" : "Thêm giao dịch mới"}
         open={isModalOpen}
@@ -578,23 +583,25 @@ export default function Transactions() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Tài khoản"
-                name="account_id"
-                rules={[
-                  { required: true, message: "Vui lòng chọn tài khoản!" },
-                ]}
-              >
-                <Select placeholder="Chọn tài khoản" size="large">
-                  {accounts.map((acc) => (
-                    <Option key={acc.id} value={acc.id}>
-                      {acc.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
+            {type === "income" && category === "Lương" ? null : (
+              <Col span={12}>
+                <Form.Item
+                  label="Tài khoản"
+                  name="account_id"
+                  rules={[
+                    { required: true, message: "Vui lòng chọn tài khoản!" },
+                  ]}
+                >
+                  <Select placeholder="Chọn tài khoản" size="large">
+                    {accounts.map((acc) => (
+                      <Option key={acc.id} value={acc.id}>
+                        {acc.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            )}
           </Row>
 
           <Form.Item

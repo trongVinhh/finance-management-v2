@@ -169,6 +169,7 @@ export function useAccounts(userId: string) {
         .eq("user_id", userId)
         .select()
         .single();
+        console.log("update account success")
 
       if (error) throw error;
 
