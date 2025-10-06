@@ -286,13 +286,13 @@ export default function Transactions() {
       align: "right" as const,
       sorter: (a: Transaction, b: Transaction) =>
         Math.abs(a.amount) - Math.abs(b.amount),
-      render: (amount: number) => (
+      render: (amount: number, record: Transaction) => (
         <div className="text-right">
           <div
             className="font-bold text-lg"
             style={{ color: getTypeColor(amount) }}
           >
-            {amount > 0 ? "+" : ""}
+            {record.type === 'income' ? "+" : "-"}
             {formatCurrency(amount, settings?.currency || "VND")}
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { useTransactions } from "../transactions/useTransactions";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -28,6 +28,7 @@ export type FilterMode = "month" | "year" | "all";
 export const useDashboard = () => {
   const { user } = useAuth();
   const [filterMode, setFilterMode] = useState<FilterMode>("month");
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const { transactions } = useTransactions(user.id);
   const [isLoading, setIsLoading] = useState(false);
   console.log("transactions", transactions);
@@ -36,13 +37,13 @@ export const useDashboard = () => {
     return transactions.filter((t) => {
       const d = dayjs(t.date);
       if (filterMode === "month") {
-        return d.isSame(dayjs(), "month");
+        return d.isSame(selectedDate, "month");
       } else if (filterMode === "year") {
-        return d.isSame(dayjs(), "year");
+        return d.isSame(selectedDate, "year");
       }
       return true;
     });
-  }, [transactions, filterMode]);
+  }, [transactions, filterMode, selectedDate]);
 
   // Tính toán summary từ filtered transactions
   const summary: DashboardSummary = useMemo(() => {
@@ -242,7 +243,7 @@ export const useDashboard = () => {
     transactions: filteredTransactions,
     allTransactions: transactions,
     isLoading,
-
+    selectedDate,
     // Computed data
     summary,
     categoryExpenseStats,
@@ -251,11 +252,8 @@ export const useDashboard = () => {
 
     // Actions
     setFilterMode,
-    // addTransaction,
-    // deleteTransaction,
-    // updateTransaction,
+    setSelectedDate,
     refreshData,
-    // exportToCSV,
   };
 };
 

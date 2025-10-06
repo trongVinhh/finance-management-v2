@@ -8,7 +8,6 @@ import {
   Space,
   Tag,
   List,
-  Select,
   Statistic,
 } from "antd";
 import {
@@ -21,16 +20,16 @@ import {
   SettingOutlined,
   TagOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import CategoryPieChart from "../components/CategoryPieChart";
 import useDashboard from "../services/dashboard/useDashboard";
 import { useSettings } from "../services/settings/useSettings";
 import { formatCurrency } from "../services/settings/enum/currency.enum";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import DashboardFilters from "../components/DashboardFilters";
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -43,10 +42,9 @@ export default function Dashboard() {
     categoryIncomeStats,
     monthlyTrend,
     setFilterMode,
+    setSelectedDate,
   } = useDashboard();
   const { settings } = useSettings();
-
-  console.log("transactions", transactions);
 
   const transactionColumns = [
     {
@@ -81,6 +79,20 @@ export default function Dashboard() {
     },
   ];
 
+  const handleFilterChange = (
+    date: Dayjs | null,
+    mode: "month" | "year" | "all"
+  ) => {
+    console.log("Filter:", mode, "Date:", date?.format("YYYY-MM-DD"));
+    if (mode === "month" && date) {
+      setSelectedDate(date); // Lưu tháng được chọn
+    } else if (mode === "year" && date) {
+      setSelectedDate(date); // Lưu năm được chọn
+    } else if (mode === "all") {
+      setSelectedDate(dayjs()); // Reset về hiện tại
+    }
+  };
+
   return (
     <div style={{ padding: "16px", margin: "0 auto" }}>
       {/* Header + Filter */}
@@ -109,7 +121,7 @@ export default function Dashboard() {
             </Text>
 
             {/* Bộ lọc nằm ngay dưới tiêu đề */}
-            <Select
+            {/* <Select
               value={filterMode}
               onChange={(val) => setFilterMode(val)}
               style={{
@@ -121,7 +133,12 @@ export default function Dashboard() {
               <Option value="month">Tháng này</Option>
               <Option value="year">Năm nay</Option>
               <Option value="all">Toàn bộ</Option>
-            </Select>
+            </Select> */}
+            <DashboardFilters
+              filterMode={filterMode}
+              setFilterMode={setFilterMode}
+              onFilterChange={handleFilterChange}
+            />
           </Col>
 
           {/* Xin chào user */}
