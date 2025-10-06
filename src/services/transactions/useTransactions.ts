@@ -335,13 +335,13 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
 
   const getTotalIncome = (): number => {
     return transactions
-      .filter((t) => t.amount > 0)
+      .filter((t) => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
   };
 
   const getTotalExpense = (): number => {
     return transactions
-      .filter((t) => t.amount < 0)
+      .filter((t) => t.type === 'expense')
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
   };
 
