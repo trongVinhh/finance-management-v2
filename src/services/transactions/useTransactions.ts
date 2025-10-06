@@ -1,11 +1,10 @@
 // src/services/transactions/useTransactions.ts
 import { useState, useEffect } from "react";
-import { App, message } from "antd";
+import { message } from "antd";
 import { supabase } from "../../lib/supabase";
 import dayjs from "dayjs";
 import { useAccounts } from "../accounts/useAccounts";
 import { useSettings } from "../settings/useSettings";
-import { notify } from "../../utils/system-helper";
 import { useNotify } from "../../contexts/NotifycationContext";
 
 export interface Transaction {
