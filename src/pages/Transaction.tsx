@@ -30,7 +30,6 @@ import {
   SwapOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
-  CalendarOutlined,
 } from "@ant-design/icons";
 import { useEffect, useMemo, useState } from "react";
 import dayjs, { Dayjs } from "dayjs";
@@ -43,6 +42,7 @@ import { useCategories } from "../services/categories/useCategories";
 import { useTransactions } from "../services/transactions/useTransactions";
 import { useSettings } from "../services/settings/useSettings";
 import { formatCurrency } from "../services/settings/enum/currency.enum";
+import { useLocation } from "react-router-dom";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
@@ -79,6 +79,7 @@ export default function Transactions() {
     getTotalExpense,
     getNetAmount,
   } = useTransactions(user?.id);
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState("");
@@ -211,6 +212,14 @@ export default function Transactions() {
       form.setFieldValue("account_id", settings?.default_account_id);
     }
   }, [type, category, settings, form]);
+
+  useEffect(() => {
+    if (location.state?.openModal) {
+      setIsModalOpen(true);
+      // Xóa state sau khi mở để không lặp lại khi reload
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const columns: ColumnsType<Transaction> = [
     {

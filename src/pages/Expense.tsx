@@ -40,19 +40,17 @@ export default function Expense() {
     allexpenses,
     isModalOpen,
     filters,
-    summary,
     expenseTypes,
-    expenseByType,
     setIsModalOpen,
     updateFilters, // Thêm này
     resetFilters,
   } = useExpense();
   const { settings } = useSettings();
-  const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<
+  const [searchText] = useState("");
+  const [selectedCategory] = useState<
     string | undefined
   >();
-  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
+  const [dateRange] = useState<[string, string] | null>(null);
   const totalIncome =
     allexpenses.length > 0
       ? allexpenses.reduce((sum, i) => sum + i.amount, 0)

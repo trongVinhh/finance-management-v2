@@ -15,31 +15,34 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
   WalletOutlined,
-  EyeOutlined,
   RiseOutlined,
   DollarOutlined,
   SafetyOutlined,
+  SettingOutlined,
+  TagOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import CategoryPieChart from "../components/CategoryPieChart";
 import useDashboard from "../services/dashboard/useDashboard";
 import { useSettings } from "../services/settings/useSettings";
 import { formatCurrency } from "../services/settings/enum/currency.enum";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     filterMode,
     transactions,
-    isLoading,
     summary,
     categoryExpenseStats,
     categoryIncomeStats,
     monthlyTrend,
     setFilterMode,
-    refreshData,
   } = useDashboard();
   const { settings } = useSettings();
 
@@ -83,26 +86,67 @@ export default function Dashboard() {
       {/* Header + Filter */}
       <Card style={{ marginBottom: "16px" }}>
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col xs={24} sm={12}>
-            <Title level={2} style={{ margin: 0, fontSize: "clamp(1.25rem, 5vw, 1.75rem)" }}>
+          <Col xs={24} sm={18}>
+            <Title
+              level={2}
+              style={{
+                margin: 0,
+                fontSize: "clamp(1.25rem, 5vw, 1.75rem)",
+              }}
+            >
               Dashboard Tài Chính
             </Title>
-            <Text type="secondary" style={{ fontSize: "clamp(0.75rem, 3vw, 0.875rem)" }}>
+
+            <Text
+              type="secondary"
+              style={{
+                display: "block",
+                marginBottom: 8,
+                fontSize: "clamp(0.75rem, 3vw, 0.875rem)",
+              }}
+            >
               Tổng quan về tình hình tài chính của bạn
             </Text>
-          </Col>
-          <Col xs={24} sm={12} style={{ textAlign: "right" }}>
+
+            {/* Bộ lọc nằm ngay dưới tiêu đề */}
             <Select
               value={filterMode}
               onChange={(val) => setFilterMode(val)}
-              style={{ width: "100%", maxWidth: 160 }}
+              style={{
+                width: "100%",
+                maxWidth: 160,
+                marginTop: 16,
+              }}
             >
               <Option value="month">Tháng này</Option>
               <Option value="year">Năm nay</Option>
               <Option value="all">Toàn bộ</Option>
             </Select>
           </Col>
+
+          {/* Xin chào user */}
+          <Col
+            xs={24}
+            sm={6}
+            style={{
+              textAlign: "right",
+              fontSize: "clamp(0.8rem, 2.5vw, 1rem)",
+            }}
+            className="greeting-col"
+          >
+            Xin chào, {user.email}
+          </Col>
         </Row>
+
+        <style>{`
+          @media (max-width: 576px) {
+            .greeting-col {
+              text-align: center !important;
+              margin-top: 12px;
+              color: rgba(0, 0, 0, 0.65);
+            }
+          }
+        `}</style>
       </Card>
 
       {/* Summary Cards - Responsive */}
@@ -113,7 +157,10 @@ export default function Dashboard() {
               title="Tổng Thu Nhập"
               value={summary.totalIncome}
               precision={0}
-              valueStyle={{ color: "#3f8600", fontSize: "clamp(1rem, 4vw, 1.5rem)" }}
+              valueStyle={{
+                color: "#3f8600",
+                fontSize: "clamp(1rem, 4vw, 1.5rem)",
+              }}
               prefix={<ArrowUpOutlined />}
               formatter={(value) =>
                 formatCurrency(Number(value), settings?.currency || "VND")
@@ -127,7 +174,10 @@ export default function Dashboard() {
               title="Tổng Chi Tiêu"
               value={summary.totalExpense}
               precision={0}
-              valueStyle={{ color: "#cf1322", fontSize: "clamp(1rem, 4vw, 1.5rem)" }}
+              valueStyle={{
+                color: "#cf1322",
+                fontSize: "clamp(1rem, 4vw, 1.5rem)",
+              }}
               prefix={<ArrowDownOutlined />}
               formatter={(value) =>
                 formatCurrency(Number(value), settings?.currency || "VND")
@@ -141,7 +191,10 @@ export default function Dashboard() {
               title="Số Dư"
               value={summary.balance}
               precision={0}
-              valueStyle={{ color: "#1890ff", fontSize: "clamp(1rem, 4vw, 1.5rem)" }}
+              valueStyle={{
+                color: "#1890ff",
+                fontSize: "clamp(1rem, 4vw, 1.5rem)",
+              }}
               prefix={<DollarOutlined />}
               formatter={(value) =>
                 formatCurrency(Number(value), settings?.currency || "VND")
@@ -155,7 +208,10 @@ export default function Dashboard() {
               title="Tỷ Lệ Tiết Kiệm"
               value={summary.savingsRate}
               precision={1}
-              valueStyle={{ color: "#52c41a", fontSize: "clamp(1rem, 4vw, 1.5rem)" }}
+              valueStyle={{
+                color: "#52c41a",
+                fontSize: "clamp(1rem, 4vw, 1.5rem)",
+              }}
               prefix={<SafetyOutlined />}
               suffix="%"
             />
@@ -196,18 +252,33 @@ export default function Dashboard() {
                   </Col>
                   <Col xs={12} sm={9}>
                     <Space direction="vertical" size={0}>
-                      <Text type="success" style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}>
+                      <Text
+                        type="success"
+                        style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}
+                      >
                         <ArrowUpOutlined /> Thu:{" "}
-                        {formatCurrency(item.income, settings?.currency || "VND")}
+                        {formatCurrency(
+                          item.income,
+                          settings?.currency || "VND"
+                        )}
                       </Text>
-                      <Text type="danger" style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}>
+                      <Text
+                        type="danger"
+                        style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}
+                      >
                         <ArrowDownOutlined /> Chi:{" "}
-                        {formatCurrency(item.expense, settings?.currency || "VND")}
+                        {formatCurrency(
+                          item.expense,
+                          settings?.currency || "VND"
+                        )}
                       </Text>
                     </Space>
                   </Col>
                   <Col xs={12} sm={9}>
-                    <Text type="secondary" style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}>
+                    <Text
+                      type="secondary"
+                      style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}
+                    >
                       Tiết kiệm:{" "}
                       {formatCurrency(
                         item.income - item.expense,
@@ -238,23 +309,46 @@ export default function Dashboard() {
       <Card title="Thao tác nhanh" style={{ marginTop: "16px" }}>
         <Row gutter={[8, 8]}>
           <Col xs={12} sm={6}>
-            <Button type="primary" block icon={<ArrowUpOutlined />} size="middle">
-              Thêm thu nhập
+            <Button
+              type="primary"
+              block
+              icon={<ArrowUpOutlined />}
+              size="middle"
+              onClick={() =>
+                navigate("/transactions", { state: { openModal: true } })
+              }
+            >
+              Thêm giao dịch
             </Button>
           </Col>
           <Col xs={12} sm={6}>
-            <Button danger block icon={<ArrowDownOutlined />} size="middle">
-              Thêm chi tiêu
-            </Button>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Button block icon={<WalletOutlined />} size="middle">
+            <Button
+              block
+              icon={<WalletOutlined />}
+              size="middle"
+              onClick={() => navigate("/accounts")}
+            >
               Quản lý TK
             </Button>
           </Col>
           <Col xs={12} sm={6}>
-            <Button block icon={<EyeOutlined />} size="middle">
-              Xem báo cáo
+            <Button
+              block
+              icon={<SettingOutlined />}
+              size="middle"
+              onClick={() => navigate("/settings")}
+            >
+              Cài đặt
+            </Button>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Button
+              block
+              icon={<TagOutlined />}
+              size="middle"
+              onClick={() => navigate("/categories")}
+            >
+              Quản lí danh mục
             </Button>
           </Col>
         </Row>

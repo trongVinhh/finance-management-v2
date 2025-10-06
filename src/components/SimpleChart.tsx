@@ -1,6 +1,5 @@
 import React from 'react';
-import { Card, Row, Col, Progress, Typography, Space, Tooltip } from 'antd';
-import { PieChartOutlined, BarChartOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Progress, Typography, Space } from 'antd';
 
 const { Text } = Typography;
 

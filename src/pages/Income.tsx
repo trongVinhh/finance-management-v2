@@ -40,19 +40,17 @@ export default function Income() {
     allIncomes,
     isModalOpen,
     filters,
-    summary,
     incomeTypes,
-    incomeByType,
     setIsModalOpen,
     updateFilters, // Thêm này
     resetFilters,
   } = useIncome();
   const { settings } = useSettings();
-  const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<
+  const [searchText] = useState("");
+  const [selectedCategory] = useState<
     string | undefined
   >();
-  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
+  const [dateRange] = useState<[string, string] | null>(null);
   const totalIncome =
     allIncomes.length > 0
       ? allIncomes.reduce((sum, i) => sum + i.amount, 0)
