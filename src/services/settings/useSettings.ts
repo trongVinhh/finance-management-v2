@@ -6,6 +6,7 @@ interface UserSettings {
   id?: string;
   user_id: string;
   default_account_id?: string;
+  default_income_account_id?: string;
   currency?: string;
   created_at?: string;
   updated_at?: string;
@@ -70,8 +71,12 @@ export const useSettings = () => {
       const updateData: any = { updated_at: new Date().toISOString() };
 
       if (settings.default_account_id === id) {
-        console.log("same id")
         updateData.default_account_id = null;
+        needUpdate = true;
+      }
+
+      if (settings.default_income_account_id === id) {
+        updateData.default_income_account_id = null;
         needUpdate = true;
       }
 
@@ -118,10 +123,12 @@ export const useSettings = () => {
       const settingsData: Partial<UserSettings> = {
         user_id: user.id,
         default_account_id: data.default_account_id,
+        default_income_account_id: data.default_income_account_id,
         currency: data.currency,
         updated_at: new Date().toISOString(),
         allocations: data.allocations,
       };
+      console.log("settingsData", settingsData)
 
       const { data: existingSettings } = await supabase
         .from("user_settings")

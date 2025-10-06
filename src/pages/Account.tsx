@@ -22,6 +22,10 @@ import {
   EditOutlined,
   DeleteOutlined,
   SaveOutlined,
+  WalletOutlined,
+  CreditCardOutlined,
+  BankOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useAccounts } from "../services/accounts/useAccounts";
@@ -378,31 +382,41 @@ export default function Accounts() {
             <Select placeholder="Chọn loại tài khoản" size="large">
               <Option value={AccountType.CASH}>
                 <div className="flex items-center">
-                  <SaveOutlined style={{ color: "#52c41a", marginRight: 8 }} />
+                  <DollarOutlined
+                    style={{ color: "#52c41a", marginRight: 8 }}
+                  />
                   Tiền mặt
                 </div>
               </Option>
+
               <Option value={AccountType.BANK}>
                 <div className="flex items-center">
-                  <SaveOutlined style={{ color: "#1890ff", marginRight: 8 }} />
+                  <BankOutlined style={{ color: "#1890ff", marginRight: 8 }} />
                   Ngân hàng
                 </div>
               </Option>
+
               <Option value={AccountType.CREDIT}>
                 <div className="flex items-center">
-                  <SaveOutlined style={{ color: "#f5222d", marginRight: 8 }} />
+                  <CreditCardOutlined
+                    style={{ color: "#f5222d", marginRight: 8 }}
+                  />
                   Thẻ tín dụng
                 </div>
               </Option>
+
               <Option value={AccountType.SAVING}>
                 <div className="flex items-center">
                   <SaveOutlined style={{ color: "#faad14", marginRight: 8 }} />
                   Tiết kiệm
                 </div>
               </Option>
+
               <Option value={AccountType.WALLET}>
                 <div className="flex items-center">
-                  <SaveOutlined style={{ color: "#722ed1", marginRight: 8 }} />
+                  <WalletOutlined
+                    style={{ color: "#722ed1", marginRight: 8 }}
+                  />
                   Ví điện tử
                 </div>
               </Option>

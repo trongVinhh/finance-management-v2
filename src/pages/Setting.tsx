@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Card,
   Form,
@@ -33,16 +33,20 @@ export default function Settings() {
   const [form] = Form.useForm();
   const { user } = useAuth();
   const { accounts } = useAccounts(user.id);
+  // const allocationAccounts  = accounts.filter((x) => x.id !== settings?.default_income_account_id);
   const [selectedAccount, setSelectedAccount] = useState<string | undefined>(
     undefined
   );
-  console.log("selected Account:", selectedAccount)
+  const [selecteIncomeAccount, setSelectedIncomeAccount] = useState<
+    string | undefined
+  >(undefined);
   const { settings, loading, saving, saveSettings } = useSettings();
   const navigate = useNavigate();
   // Sync settings to form when loaded
   useEffect(() => {
     if (settings) {
       setSelectedAccount(settings.default_account_id);
+      setSelectedIncomeAccount(settings.default_income_account_id);
       form.setFieldsValue({
         currency: settings.currency,
       });
@@ -74,13 +78,14 @@ export default function Settings() {
       // }
 
       // Lấy allocations từ form và map với accountId
-      const allocations = accounts.map((account, index) => ({
+      const allocations = allocationAccounts.map((account, index) => ({
         accountId: account.id,
         amount: values.allocations?.[index]?.amount || 0,
       }));
 
       await saveSettings({
         default_account_id: selectedAccount,
+        default_income_account_id: selecteIncomeAccount,
         currency: values.currency,
         allocations: allocations,
       });
@@ -91,6 +96,10 @@ export default function Settings() {
       notify("error", "Thất bại!", "Cài đặt thất bại, vui lòng kiểm tra!");
     }
   };
+
+  const allocationAccounts = useMemo(() => {
+    return accounts.filter((a) => a.id !== selecteIncomeAccount);
+  }, [accounts, selecteIncomeAccount]);
 
   if (loading) {
     return (
@@ -167,13 +176,21 @@ export default function Settings() {
                         { required: true, message: "Vui lòng chọn tài khoản" },
                       ]}
                     >
-                      <label style={{ color: "red", display: "block", marginBottom: 4 }}>
+                      <label
+                        style={{
+                          color: "red",
+                          display: "block",
+                          marginBottom: 4,
+                        }}
+                      >
                         *Vui lòng tạo tài khoản để thực hiện cài đặt
                       </label>
                       <Button
                         type="link"
                         style={{ padding: 0 }}
-                        onClick={() => navigate("/accounts", { state: { openModal: true } })}
+                        onClick={() =>
+                          navigate("/accounts", { state: { openModal: true } })
+                        }
                       >
                         ➕ Tạo tài khoản
                       </Button>
@@ -192,6 +209,25 @@ export default function Settings() {
                         placeholder="Chọn tài khoản"
                         value={selectedAccount}
                         onChange={(value) => setSelectedAccount(value)}
+                      >
+                        {accounts.map((a) => (
+                          <Select.Option key={a.id} value={a.id}>
+                            {a.name}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                    <Form.Item
+                      label="Tài khoản nhận tiền mặc định"
+                      rules={[
+                        { required: true, message: "Vui lòng chọn tài khoản" },
+                      ]}
+                    >
+                      <Select
+                        size="large"
+                        placeholder="Chọn tài khoản"
+                        value={selecteIncomeAccount}
+                        onChange={(value) => setSelectedIncomeAccount(value)}
                       >
                         {accounts.map((a) => (
                           <Select.Option key={a.id} value={a.id}>
@@ -237,7 +273,7 @@ export default function Settings() {
             {accounts.length > 0 ? (
               <Form form={form} layout="vertical">
                 <Table
-                  dataSource={accounts}
+                  dataSource={allocationAccounts}
                   columns={columns}
                   rowKey="id"
                   pagination={false}

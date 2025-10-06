@@ -107,7 +107,7 @@ export default function Transactions() {
   const type = Form.useWatch("type", form);
   const category = Form.useWatch("category", form);
 
-  const getTypeIcon = (type: "income" | "expense") => {
+  const getTypeIcon = (type: "income" | "expense" | "suddenly") => {
     return type === "income" ? (
       <UpOutlined style={{ color: "#52c41a" }} />
     ) : (
@@ -247,7 +247,7 @@ export default function Transactions() {
       onFilter: (value, record: Transaction) => {
         return record.type === value;
       },
-      render: (type: "income" | "expense") => (
+      render: (type: "income" | "expense" | "suddenly") => (
         <Tooltip title={type === "income" ? "Thu nhập" : "Chi tiêu"}>
           {getTypeIcon(type)}
         </Tooltip>

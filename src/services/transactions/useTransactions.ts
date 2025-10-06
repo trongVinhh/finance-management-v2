@@ -142,28 +142,30 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
               total += amount;
             }
 
-            if (total < data.amount) {
+            if (total > data.amount) {
               notify(
                 "error",
                 "Thất bại!",
-                "Số tiền phân bổ ít hơn tổng thu nhập!"
-                
-              );
-              return null;
-            } else if (total > data.amount) {
-              notify(
-                "error",
-                "Thất bại!",
-                "Số tiền phân bổ vượt quá tổng thu nhập!"
+                "Số tiền phân bổ lớn hơn tổng thu nhập!"
               );
               return null;
             } else {
               for (const { amount, accountId } of allocations) {
+                if (accountId === settings.default_income_account_id) {
+                  continue;
+                }
                 const account = getAccountById(accountId);
                 const newAmount = account!.amount + amount;
                 amountAllocated += amount;
                 updateBalance(accountId, newAmount);
               }
+              const accountIncome = getAccountById(
+                settings.default_income_account_id!
+              );
+              const amountNonAllocated = data.amount - amountAllocated;
+              const newAmount =
+                (accountIncome?.amount || 0) + amountNonAllocated;
+              updateBalance(settings.default_income_account_id!, newAmount);
             }
           }
         } else {
@@ -181,20 +183,12 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
       if (error) throw error;
 
       setTransactions((prev) => [newTransaction, ...prev]);
-      notify(
-        "success",
-        "Thành công!",
-        "Thêm giao dịch thành công!"
-      );
+      notify("success", "Thành công!", "Thêm giao dịch thành công!");
 
       return newTransaction;
     } catch (error: any) {
       console.error("Error creating transaction:", error);
-      notify(
-        "error",
-        "Thất bại!",
-        "Thêm giao dịch thất bại!"
-      );
+      notify("error", "Thất bại!", "Thêm giao dịch thất bại!");
       return null;
     } finally {
       setCreating(false);
@@ -277,12 +271,20 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
         let amountAllocated = 0;
         if (allocations) {
           for (const { amount, accountId } of allocations) {
+            if (accountId === settings.default_income_account_id) {
+              continue;
+            }
             const account = getAccountById(accountId);
             const newAmount = account!.amount - amount;
             amountAllocated += amount;
-            amountNonAllocated -= amountAllocated;
             updateBalance(accountId, newAmount);
           }
+          amountNonAllocated -= amountAllocated;
+        }
+        if (settings?.default_income_account_id) {
+          const account = getAccountById(settings?.default_income_account_id);
+          const newAmount = account!.amount - amountNonAllocated;
+          updateBalance(settings?.default_income_account_id, newAmount);
         }
       } else {
         const account = getAccountById(transaction!.account_id);
@@ -335,13 +337,13 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
 
   const getTotalIncome = (): number => {
     return transactions
-      .filter((t) => t.type === 'income')
+      .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + t.amount, 0);
   };
 
   const getTotalExpense = (): number => {
     return transactions
-      .filter((t) => t.type === 'expense')
+      .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
   };
 
