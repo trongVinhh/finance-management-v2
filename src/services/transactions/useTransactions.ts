@@ -146,14 +146,15 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
               notify(
                 "error",
                 "Thất bại!",
-                "Số tiền phân bổ vượt quá tổng thu nhập!"
+                "Số tiền phân bổ ít hơn tổng thu nhập!"
+                
               );
               return null;
             } else if (total > data.amount) {
               notify(
                 "error",
                 "Thất bại!",
-                "Số tiền phân bổ vượt ít hơn tổng thu nhập!"
+                "Số tiền phân bổ vượt quá tổng thu nhập!"
               );
               return null;
             } else {
