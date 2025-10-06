@@ -7,7 +7,6 @@ import {
   Typography,
   Row,
   Col,
-  message,
   InputNumber,
   Table,
   Empty,
@@ -19,6 +18,8 @@ import { useAccounts } from "../services/accounts/useAccounts";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../services/settings/useSettings";
 import { formatCurrency } from "../services/settings/enum/currency.enum";
+import { useNavigate } from "react-router-dom";
+import { useNotify } from "../contexts/NotifycationContext";
 
 const { Title, Text } = Typography;
 
@@ -28,14 +29,16 @@ type Account = {
 };
 
 export default function Settings() {
+  const notify = useNotify();
   const [form] = Form.useForm();
   const { user } = useAuth();
   const { accounts } = useAccounts(user.id);
   const [selectedAccount, setSelectedAccount] = useState<string | undefined>(
     undefined
   );
+  console.log("selected Account:", selectedAccount)
   const { settings, loading, saving, saveSettings } = useSettings();
-
+  const navigate = useNavigate();
   // Sync settings to form when loaded
   useEffect(() => {
     if (settings) {
@@ -65,10 +68,10 @@ export default function Settings() {
     try {
       const values = await form.validateFields();
 
-      if (!selectedAccount) {
-        message.warning("Vui lòng chọn tài khoản mặc định");
-        return;
-      }
+      // if (!selectedAccount) {
+      //   message.warning("Vui lòng chọn tài khoản mặc định");
+      //   return;
+      // }
 
       // Lấy allocations từ form và map với accountId
       const allocations = accounts.map((account, index) => ({
@@ -82,10 +85,10 @@ export default function Settings() {
         allocations: allocations,
       });
 
-      message.success("Lưu cài đặt thành công");
+      notify("success", "Thành công!", "Cài đặt thành công!");
     } catch (error) {
       console.error("Validation failed:", error);
-      message.error("Có lỗi xảy ra khi lưu cài đặt");
+      notify("error", "Thất bại!", "Cài đặt thất bại, vui lòng kiểm tra!");
     }
   };
 
@@ -156,27 +159,50 @@ export default function Settings() {
           <Card title="Giá trị mặc định" className="mb-6">
             <Form layout="vertical" form={form}>
               <Row gutter={16}>
-                <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Tài khoản mặc định"
-                    rules={[
-                      { required: true, message: "Vui lòng chọn tài khoản" },
-                    ]}
-                  >
-                    <Select
-                      size="large"
-                      placeholder="Chọn tài khoản"
-                      value={selectedAccount}
-                      onChange={(value) => setSelectedAccount(value)}
+                {accounts.length === 0 ? (
+                  <Col xs={24} sm={8}>
+                    <Form.Item
+                      label="Tài khoản mặc định"
+                      rules={[
+                        { required: true, message: "Vui lòng chọn tài khoản" },
+                      ]}
                     >
-                      {accounts.map((a) => (
-                        <Select.Option key={a.id} value={a.id}>
-                          {a.name}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
+                      <label style={{ color: "red", display: "block", marginBottom: 4 }}>
+                        *Vui lòng tạo tài khoản để thực hiện cài đặt
+                      </label>
+                      <Button
+                        type="link"
+                        style={{ padding: 0 }}
+                        onClick={() => navigate("/accounts", { state: { openModal: true } })}
+                      >
+                        ➕ Tạo tài khoản
+                      </Button>
+                    </Form.Item>
+                  </Col>
+                ) : (
+                  <Col xs={24} sm={8}>
+                    <Form.Item
+                      label="Tài khoản mặc định"
+                      rules={[
+                        { required: true, message: "Vui lòng chọn tài khoản" },
+                      ]}
+                    >
+                      <Select
+                        size="large"
+                        placeholder="Chọn tài khoản"
+                        value={selectedAccount}
+                        onChange={(value) => setSelectedAccount(value)}
+                      >
+                        {accounts.map((a) => (
+                          <Select.Option key={a.id} value={a.id}>
+                            {a.name}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                )}
+
                 <Col xs={24} sm={8}>
                   <Form.Item
                     label="Đơn vị tiền tệ"
@@ -240,8 +266,7 @@ export default function Settings() {
               <Empty
                 description="Chưa có tài khoản nào"
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-              >
-              </Empty>
+              ></Empty>
             )}
           </Card>
         </Col>

@@ -5,15 +5,15 @@ import { supabase } from "../../lib/supabase";
 interface UserSettings {
   id?: string;
   user_id: string;
-  default_account_id: string;
-  currency: string;
+  default_account_id?: string;
+  currency?: string;
   created_at?: string;
   updated_at?: string;
   allocations: Allocation[];
 }
 interface Allocation {
   accountId: string;
-  amount: number
+  amount: number;
 }
 
 export const useSettings = () => {
@@ -47,6 +47,58 @@ export const useSettings = () => {
       console.error("Error loading settings:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const removeAccountFromSettings = async (id: string) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      // Lấy settings hiện tại
+      const { data: settings, error: fetchError } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (fetchError || !settings) return;
+
+      let needUpdate = false;
+      const updateData: any = { updated_at: new Date().toISOString() };
+
+      if (settings.default_account_id === id) {
+        console.log("same id")
+        updateData.default_account_id = null;
+        needUpdate = true;
+      }
+
+      const updatedAllocations = settings.allocations?.filter(
+        (alloc: any) => alloc.accountId !== id
+      );
+
+      if (
+        updatedAllocations &&
+        updatedAllocations.length !== settings.allocations?.length
+      ) {
+        updateData.allocations = updatedAllocations;
+        needUpdate = true;
+      }
+
+      if (needUpdate) {
+        const { error: updateError } = await supabase
+          .from("user_settings")
+          .update(updateData)
+          .eq("user_id", user.id);
+
+        if (updateError) throw updateError;
+
+        console.log("Settings updated successfully after account deletion");
+      }
+    } catch (err) {
+      console.error("Error updating settings after account removal:", err);
     }
   };
 
@@ -125,6 +177,8 @@ export const useSettings = () => {
     return await supabase.from("user_settings").insert({
       user_id: userId,
       currency: "VND",
+      default_account_id: "",
+      allocations: [],
     });
   };
 
@@ -132,6 +186,7 @@ export const useSettings = () => {
     settings,
     loading,
     saving,
+    removeAccountFromSettings,
     loadSettings,
     saveSettings,
     initSettings,

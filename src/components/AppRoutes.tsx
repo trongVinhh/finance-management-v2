@@ -10,6 +10,8 @@ import ProtectedRoute from "./ProtectedRoute";
 import Category from "../pages/Category";
 import Income from "../pages/Income";
 import Expense from "../pages/Expense";
+import Debts from "../pages/Debt";
+import Loans from "../pages/Loans";
 
 
 const AppRoutes = () => {
@@ -77,6 +79,28 @@ const AppRoutes = () => {
             <ProtectedRoute>
               <AppLayout>
                 <Expense />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/debts"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Debts />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/loans"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Loans />
               </AppLayout>
             </ProtectedRoute>
           }

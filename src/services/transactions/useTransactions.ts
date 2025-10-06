@@ -91,7 +91,6 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
       setLoading(false);
     } catch (error: any) {
       console.error("Error loading transactions:", error);
-      message.error("Không thể tải danh sách giao dịch");
     } finally {
       setLoading(false);
     }
@@ -120,6 +119,14 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
         account_id: data.account_id,
       };
 
+      if (
+        (data.type === "expense" || data.type === "suddenly") &&
+        !data.account_id
+      ) {
+        notify("error", "Thất bại!", "Vui lòng chọn tài khoản!");
+        return null;
+      }
+
       // Update amount of account
       const account = getAccountById(data.account_id);
       if (data.type === "expense" || data.type === "suddenly") {
@@ -136,10 +143,18 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
             }
 
             if (total < data.amount) {
-              notify("error", "Thất bại!", "Số tiền phân bổ vượt quá tổng thu nhập!");
+              notify(
+                "error",
+                "Thất bại!",
+                "Số tiền phân bổ vượt quá tổng thu nhập!"
+              );
               return null;
             } else if (total > data.amount) {
-              notify("error", "Thất bại!", "Số tiền phân bổ vượt ít hơn tổng thu nhập!");
+              notify(
+                "error",
+                "Thất bại!",
+                "Số tiền phân bổ vượt ít hơn tổng thu nhập!"
+              );
               return null;
             } else {
               for (const { amount, accountId } of allocations) {
@@ -165,12 +180,20 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
       if (error) throw error;
 
       setTransactions((prev) => [newTransaction, ...prev]);
-      message.success("Thêm giao dịch thành công!");
+      notify(
+        "success",
+        "Thành công!",
+        "Thêm giao dịch thành công!"
+      );
 
       return newTransaction;
     } catch (error: any) {
       console.error("Error creating transaction:", error);
-      message.error("Không thể thêm giao dịch");
+      notify(
+        "error",
+        "Thất bại!",
+        "Thêm giao dịch thất bại!"
+      );
       return null;
     } finally {
       setCreating(false);
@@ -259,11 +282,6 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
             amountNonAllocated -= amountAllocated;
             updateBalance(accountId, newAmount);
           }
-        }
-        if (amountNonAllocated > 0) {
-          const defaultAccount = getAccountById(settings!.default_account_id);
-          const newAmount = defaultAccount!.amount - amountNonAllocated;
-          updateBalance(settings!.default_account_id, newAmount);
         }
       } else {
         const account = getAccountById(transaction!.account_id);

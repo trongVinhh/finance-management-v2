@@ -10,6 +10,8 @@ import {
   ArrowDownOutlined,
   LogoutOutlined,
   TagsOutlined,
+  CreditCardOutlined,
+  MoneyCollectOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -39,6 +41,8 @@ export default function ResponsiveNav({ children }: ResponsiveNavProps) {
     { key: '/categories', label: <Link to="/categories">Danh mục</Link>, icon: <TagsOutlined /> },
     { key: '/income', label: <Link to="/income">Thu</Link>, icon: <ArrowUpOutlined /> },
     { key: '/expense', label: <Link to="/expense">Chi</Link>, icon: <ArrowDownOutlined /> },
+    { key: '/debts', label: <Link to="/debts">Quản lí nợ</Link>, icon: <MoneyCollectOutlined /> },
+    { key: '/loans', label: <Link to="/loans">Quản lí vay</Link>, icon: <CreditCardOutlined  /> },
     { key: '/settings', label: <Link to="/settings">Cài đặt</Link>, icon: <SettingOutlined /> },
     {
       key: 'logout',

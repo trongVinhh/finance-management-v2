@@ -20,7 +20,7 @@ export function getDefaultCategories(userId: string) {
 }
 
 export const currencyUnits = [
-  { label: "VNĐ", value: "VND" },
+  { label: "VND", value: "VND" },
   { label: "JPY", value: "JPY" },
   { label: "USD", value: "USD" },
 ];

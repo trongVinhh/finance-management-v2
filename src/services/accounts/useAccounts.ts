@@ -9,12 +9,14 @@ import { AccountType } from "./enum/account-type.enum";
 import { useEffect, useState } from "react";
 import type { Account } from "./entities/account.entity";
 import { supabase } from "../../lib/supabase";
-import { message } from "antd";
+import { useSettings } from "../settings/useSettings";
+import { useNotify } from "../../contexts/NotifycationContext";
 
 export function useAccounts(userId: string) {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const { settings, removeAccountFromSettings } = useSettings();
   const [loading, setLoading] = useState(true);
-
+  const notify = useNotify();
   // fetch accounts + init default
   useEffect(() => {
     if (!userId) return;
@@ -30,36 +32,14 @@ export function useAccounts(userId: string) {
 
       if (error) {
         console.error("Lỗi fetch accounts:", error);
-        message.error("Không thể tải danh sách tài khoản");
+        notify("error", "Thất bại!", "Không thể tải danh sách tài khoản");
         setLoading(false);
         return;
       }
 
       if (data && data.length > 0) {
         setAccounts(data);
-      } 
-    //   else {
-    //     // nếu user chưa có account nào -> tạo mặc định 1 tài khoản tiền mặt
-    //     const { data: inserted, error: insertError } = await supabase
-    //       .from("accounts")
-    //       .insert([
-    //         {
-    //           user_id: userId,
-    //           name: "Tiền mặt",
-    //           type: AccountType.CASH,
-    //           amount: 0,
-    //           key: "CASH",
-    //           logo: "",
-    //         },
-    //       ])
-    //       .select();
-
-    //     if (insertError) {
-    //       console.error("Lỗi tạo account mặc định:", insertError);
-    //     } else if (inserted) {
-    //       setAccounts(inserted);
-    //     }
-    //   }
+      }
 
       setLoading(false);
     };
@@ -68,9 +48,7 @@ export function useAccounts(userId: string) {
   }, [userId]);
 
   // CREATE
-  const createAccount = async (
-    accountData: Omit<Account, "id" | "userId">
-  ) => {
+  const createAccount = async (accountData: Omit<Account, "id" | "userId">) => {
     try {
       const { data, error } = await supabase
         .from("accounts")
@@ -86,11 +64,11 @@ export function useAccounts(userId: string) {
       if (error) throw error;
 
       setAccounts((prev) => [data, ...prev]);
-      message.success("Thêm tài khoản thành công");
+      notify("success", "Thành công!", "Tạo tài khoản thành công");
       return { data, error: null };
     } catch (error: any) {
       console.error("Lỗi tạo account:", error);
-      message.error("Không thể tạo tài khoản");
+      notify("error", "Thất bại!", "Không thể tạo tài khoản");
       return { data: null, error };
     }
   };
@@ -116,45 +94,59 @@ export function useAccounts(userId: string) {
       setAccounts((prev) =>
         prev.map((acc) => (acc.id === accountId ? data : acc))
       );
-      message.success("Cập nhật tài khoản thành công");
+      notify("success", "Thành công!", "Cập nhật tài khoản thành công");
       return { data, error: null };
     } catch (error: any) {
       console.error("Lỗi cập nhật account:", error);
-      message.error("Không thể cập nhật tài khoản");
+      notify("error", "Thất bại!", "Không thể cập nhật tài khoản");
       return { data: null, error };
     }
   };
 
   // DELETE
-  const deleteAccount = async (accountId: string) => {
+  const deleteAccount = async (id: string) => {
     try {
       // Kiểm tra xem có transaction nào liên quan không
       const { count } = await supabase
         .from("transactions")
         .select("*", { count: "exact", head: true })
-        .eq("account_id", accountId);
+        .eq("account_id", id);
 
       if (count && count > 0) {
-        message.warning(
-          "Không thể xóa tài khoản có giao dịch. Vui lòng xóa các giao dịch trước."
+        notify(
+          "error",
+          "Thất bại!",
+          "Không thể xóa tài khoản tài khoản đã có giao dịch, vui lòng xóa giao dịch."
         );
         return { data: null, error: "Account has transactions" };
+      }
+
+      if (settings?.default_account_id === id) {
+
+      }
+
+      if (settings?.allocations && settings.allocations.length > 0) {
+        for (const { accountId } of settings.allocations) {
+          if (accountId === id) {
+            removeAccountFromSettings(accountId);
+          }
+        }
       }
 
       const { error } = await supabase
         .from("accounts")
         .delete()
-        .eq("id", accountId)
+        .eq("id", id)
         .eq("user_id", userId);
 
       if (error) throw error;
 
-      setAccounts((prev) => prev.filter((acc) => acc.id !== accountId));
-      message.success("Xóa tài khoản thành công");
+      setAccounts((prev) => prev.filter((acc) => acc.id !== id));
+      notify("success", "Thành công!", "Xóa tài khoản thành công");
       return { data: true, error: null };
     } catch (error: any) {
       console.error("Lỗi xóa account:", error);
-      message.error("Không thể xóa tài khoản");
+      notify("error", "Thất bại!", "Xóa tài khoản thất bại");
       return { data: null, error };
     }
   };
@@ -169,7 +161,7 @@ export function useAccounts(userId: string) {
         .eq("user_id", userId)
         .select()
         .single();
-        console.log("update account success")
+      console.log("update account success");
 
       if (error) throw error;
 
