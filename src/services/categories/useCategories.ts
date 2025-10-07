@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { getDefaultCategories } from "../../utils/system-constants";
 import type { Category } from "./entities/category.entity";
+import type { Group } from "./entities/group.entity";
 
 export const useCategories = (userId?: string) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
   const initCategories = async (userId: string) => {
     const defaultCategories = getDefaultCategories(userId);
@@ -36,6 +38,22 @@ export const useCategories = (userId?: string) => {
       setCategories(data);
     }
 
+    setLoading(false);
+  };
+
+  const fetchGroups = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("groups")
+      .select("*");
+
+    if (error) {
+      console.error("Error fetching categories:", error);
+      setLoading(false);
+      return;
+    }
+
+    setGroups(data);
     setLoading(false);
   };
 
@@ -79,6 +97,7 @@ export const useCategories = (userId?: string) => {
   };
 
   useEffect(() => {
+    fetchGroups();
     if (userId) {
       fetchCategories(userId);
     }
@@ -86,6 +105,7 @@ export const useCategories = (userId?: string) => {
 
   return {
     categories,
+    groups,
     setCategories,
     loading,
     refetch: () => userId && fetchCategories(userId),

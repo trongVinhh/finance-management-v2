@@ -3,20 +3,13 @@ import {
   Row,
   Col,
   Button,
-  Table,
   Typography,
-  Space,
-  Tag,
-  List,
   Statistic,
 } from "antd";
 import {
   ArrowUpOutlined,
   ArrowDownOutlined,
   WalletOutlined,
-  RiseOutlined,
-  DollarOutlined,
-  SafetyOutlined,
   SettingOutlined,
   TagOutlined,
 } from "@ant-design/icons";
@@ -36,48 +29,48 @@ export default function Dashboard() {
   const { user } = useAuth();
   const {
     filterMode,
-    transactions,
     summary,
     categoryExpenseStats,
     categoryIncomeStats,
-    monthlyTrend,
+    categorySuddenStats,
+    categorySaveAndShareStats,
     setFilterMode,
     setSelectedDate,
   } = useDashboard();
   const { settings } = useSettings();
 
-  const transactionColumns = [
-    {
-      title: "Ngày",
-      dataIndex: "date",
-      key: "date",
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
-      responsive: ["sm"] as any,
-    },
-    {
-      title: "Mô tả",
-      dataIndex: "desc",
-      key: "desc",
-      ellipsis: true,
-    },
-    {
-      title: "Danh mục",
-      dataIndex: "category",
-      key: "category",
-      render: (category: string) => <Tag color="blue">{category}</Tag>,
-      responsive: ["md"] as any,
-    },
-    {
-      title: "Số tiền",
-      dataIndex: "amount",
-      key: "amount",
-      render: (amount: number) => (
-        <Text type={amount > 0 ? "success" : "danger"}>
-          {formatCurrency(Math.abs(amount), settings?.currency || "VND")}
-        </Text>
-      ),
-    },
-  ];
+  // const transactionColumns = [
+  //   {
+  //     title: "Ngày",
+  //     dataIndex: "date",
+  //     key: "date",
+  //     render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+  //     responsive: ["sm"] as any,
+  //   },
+  //   {
+  //     title: "Mô tả",
+  //     dataIndex: "desc",
+  //     key: "desc",
+  //     ellipsis: true,
+  //   },
+  //   {
+  //     title: "Danh mục",
+  //     dataIndex: "category",
+  //     key: "category",
+  //     render: (category: string) => <Tag color="blue">{category}</Tag>,
+  //     responsive: ["md"] as any,
+  //   },
+  //   {
+  //     title: "Số tiền",
+  //     dataIndex: "amount",
+  //     key: "amount",
+  //     render: (amount: number) => (
+  //       <Text type={amount > 0 ? "success" : "danger"}>
+  //         {formatCurrency(Math.abs(amount), settings?.currency || "VND")}
+  //       </Text>
+  //     ),
+  //   },
+  // ];
 
   const handleFilterChange = (
     date: Dayjs | null,
@@ -169,7 +162,14 @@ export default function Dashboard() {
       {/* Summary Cards - Responsive */}
       <Row gutter={[16, 16]} style={{ marginBottom: "16px" }}>
         <Col xs={12} sm={12} lg={6}>
-          <Card>
+          <Card
+            bodyStyle={{
+              padding: "8px",
+              display: "flex",
+              alignItems: "center",
+              height: "80px",
+            }}
+          >
             <Statistic
               title="Tổng Thu Nhập"
               value={summary.totalIncome}
@@ -186,7 +186,14 @@ export default function Dashboard() {
           </Card>
         </Col>
         <Col xs={12} sm={12} lg={6}>
-          <Card>
+          <Card
+            bodyStyle={{
+              padding: "8px",
+              display: "flex",
+              alignItems: "center",
+              height: "80px",
+            }}
+          >
             <Statistic
               title="Tổng Chi Tiêu"
               value={summary.totalExpense}
@@ -203,16 +210,23 @@ export default function Dashboard() {
           </Card>
         </Col>
         <Col xs={12} sm={12} lg={6}>
-          <Card>
+          <Card
+            bodyStyle={{
+              padding: "8px",
+              display: "flex",
+              alignItems: "center",
+              height: "80px",
+            }}
+          >
             <Statistic
-              title="Số Dư"
-              value={summary.balance}
+              title="Tổng Save & Share"
+              value={summary.totalSaveAndShare}
               precision={0}
               valueStyle={{
-                color: "#1890ff",
+                color: "#cf1322",
                 fontSize: "clamp(1rem, 4vw, 1.5rem)",
               }}
-              prefix={<DollarOutlined />}
+              prefix={<ArrowDownOutlined />}
               formatter={(value) =>
                 formatCurrency(Number(value), settings?.currency || "VND")
               }
@@ -220,17 +234,26 @@ export default function Dashboard() {
           </Card>
         </Col>
         <Col xs={12} sm={12} lg={6}>
-          <Card>
+          <Card
+            bodyStyle={{
+              padding: "8px",
+              display: "flex",
+              alignItems: "center",
+              height: "80px",
+            }}
+          >
             <Statistic
-              title="Tỷ Lệ Tiết Kiệm"
-              value={summary.savingsRate}
-              precision={1}
+              title="Tổng Bất Ngờ"
+              value={summary.totalSuddenly}
+              precision={0}
               valueStyle={{
-                color: "#52c41a",
+                color: "#cf1322",
                 fontSize: "clamp(1rem, 4vw, 1.5rem)",
               }}
-              prefix={<SafetyOutlined />}
-              suffix="%"
+              prefix={<ArrowDownOutlined />}
+              formatter={(value) =>
+                formatCurrency(Number(value), settings?.currency || "VND")
+              }
             />
           </Card>
         </Col>
@@ -240,20 +263,35 @@ export default function Dashboard() {
       <Row gutter={[16, 16]} style={{ marginBottom: "16px" }}>
         <Col xs={24} lg={12}>
           <CategoryPieChart
-            title="Phân bổ chi tiêu theo danh mục"
+            title="Phân bổ chi tiêu theo: Chi tiêu"
             data={categoryExpenseStats}
           />
         </Col>
         <Col xs={24} lg={12}>
           <CategoryPieChart
-            title="Phân bổ thu nhập theo danh mục"
+            title="Phân bổ chi tiêu theo: Save & share"
+            data={categorySaveAndShareStats}
+          />
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: "16px" }}>
+        <Col xs={24} lg={12}>
+          <CategoryPieChart
+            title="Phân bổ chi tiêu theo: Bất ngờ"
+            data={categorySuddenStats}
+          />
+        </Col>
+        <Col xs={24} lg={12}>
+          <CategoryPieChart
+            title="Phân bổ thu nhập theo: Thu nhập"
             data={categoryIncomeStats}
           />
         </Col>
       </Row>
 
       {/* Xu hướng thu chi - Optional, có thể bật lại */}
-      {monthlyTrend && monthlyTrend.length > 0 && (
+      {/* {monthlyTrend && monthlyTrend.length > 0 && (
         <Card
           title="Xu hướng thu chi hàng tháng"
           extra={<RiseOutlined style={{ fontSize: 18 }} />}
@@ -308,10 +346,10 @@ export default function Dashboard() {
             )}
           />
         </Card>
-      )}
+      )} */}
 
       {/* Giao dịch gần đây */}
-      <Card title="Giao dịch gần đây">
+      {/* <Card title="Giao dịch gần đây">
         <Table
           dataSource={transactions}
           columns={transactionColumns}
@@ -320,7 +358,7 @@ export default function Dashboard() {
           rowKey="id"
           scroll={{ x: 400 }}
         />
-      </Card>
+      </Card> */}
 
       {/* Thao tác nhanh - Optional */}
       <Card title="Thao tác nhanh" style={{ marginTop: "16px" }}>

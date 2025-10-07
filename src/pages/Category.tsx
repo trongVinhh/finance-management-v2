@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Card,
   Table,
@@ -10,6 +10,7 @@ import {
   Space,
   Tag,
   Popconfirm,
+  Radio,
 } from "antd";
 import {
   PlusOutlined,
@@ -23,26 +24,18 @@ import { useCategories } from "../services/categories/useCategories";
 type Category = {
   id: string;
   name: string;
-  type: "income" | "expense" | "suddenly";
+  type: "income" | "expense" | "suddenly" | "saveAndShare";
   color: string;
+  group?: string;
 };
-
-// const initialData: Category[] = [
-//   { id: 1, name: "Lương", type: "income", color: "green" },
-//   { id: 2, name: "Ăn uống", type: "expense", color: "red" },
-//   { id: 3, name: "Nhà ở", type: "expense", color: "blue" },
-//   { id: 4, name: "Freelance", type: "income", color: "cyan" },
-// ];
 
 export default function Category() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [form] = Form.useForm();
   const { user } = useAuth();
-  const { categories, addCategory, updateCategory, deleteCategory} = useCategories(user?.id);
-  useEffect(() => {
-    if (!user) return;
-  }, []);
+  const { categories, groups, addCategory, updateCategory, deleteCategory } =
+    useCategories(user?.id);
 
   const showModal = (category?: Category) => {
     if (category) {
@@ -58,7 +51,7 @@ export default function Category() {
   const handleOk = () => {
     form.validateFields().then((values) => {
       if (editingCategory) {
-        updateCategory(editingCategory.id, values)
+        updateCategory(editingCategory.id, values);
       } else {
         addCategory(values);
       }
@@ -68,7 +61,7 @@ export default function Category() {
   };
 
   const handleDelete = (id: string) => {
-    deleteCategory(id)
+    deleteCategory(id);
   };
 
   const columns = [
@@ -84,15 +77,31 @@ export default function Category() {
       title: "Loại",
       dataIndex: "type",
       key: "type",
+      filters: [{ text: "Thu nhập", value:  "income"}, { text: "Chi tiêu", value:  "expense"}],
+      onFilter: (value: any, record: Category) => record.type === value,
       render: (type: string) =>
         type === "income" ? (
           <Tag color="green">Thu nhập</Tag>
-        ) : type=== "expense" ? (
+        ) : type === "expense" ? (
           <Tag color="red">Chi tiêu</Tag>
-        ) :  (
+        ) : type === "suddenly" ? (
           <Tag color="cyan">Bất ngờ</Tag>
+        ) : (
+          <Tag color="gray">Save & Share</Tag>
         ),
     },
+    {
+      title: "Nhóm",
+      dataIndex: "group",
+      key: "group",
+      filters: groups.map((g) => ({ text: g.name, value: g.key })),
+      onFilter: (value: any, record: Category) => record.group === value,
+      render: (key: string) => {
+        const group = groups.find((g) => g.key === key);
+        return group ? group.name : "-";
+      },
+    },
+
     {
       title: "Thao tác",
       key: "actions",
@@ -130,7 +139,11 @@ export default function Category() {
           </Space>
         }
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => showModal()}
+          >
             Thêm danh mục
           </Button>
         }
@@ -160,6 +173,7 @@ export default function Category() {
           >
             <Input placeholder="Ví dụ: Ăn uống, Lương..." />
           </Form.Item>
+
           <Form.Item
             name="type"
             label="Loại"
@@ -168,9 +182,24 @@ export default function Category() {
             <Select>
               <Select.Option value="income">Thu nhập</Select.Option>
               <Select.Option value="expense">Chi tiêu</Select.Option>
-              <Select.Option value="suddenly">Bất ngờ</Select.Option>
             </Select>
           </Form.Item>
+
+          {/* 🔹 Thêm radio chọn nhóm */}
+          <Form.Item
+            name="group"
+            label="Nhóm"
+            rules={[{ required: true, message: "Chọn nhóm!" }]}
+          >
+            <Radio.Group>
+              {groups.map((g) => (
+                <Radio key={g.id} value={g.key}>
+                  {g.name}
+                </Radio>
+              ))}
+            </Radio.Group>
+          </Form.Item>
+
           <Form.Item
             name="color"
             label="Màu hiển thị"

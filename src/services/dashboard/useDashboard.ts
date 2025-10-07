@@ -19,8 +19,8 @@ export interface MonthlyTrend {
 export interface DashboardSummary {
   totalIncome: number;
   totalExpense: number;
-  balance: number;
-  savingsRate: number;
+  totalSaveAndShare: number;
+  totalSuddenly: number;
 }
 
 export type FilterMode = "month" | "year" | "all";
@@ -48,28 +48,36 @@ export const useDashboard = () => {
   // Tính toán summary từ filtered transactions
   const summary: DashboardSummary = useMemo(() => {
     const totalIncome = filteredTransactions
-      .filter((t) => t.type === "income")
+      .filter((t) => t.group === "THU_NHAP")
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     const totalExpense = filteredTransactions
-      .filter((t) => t.type === "expense")
+      .filter((t) => t.group === "CHI_TIEU")
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-    const balance = totalIncome - totalExpense;
-    const savingsRate = totalIncome > 0 ? (balance / totalIncome) * 100 : 0;
+      const totalSuddenly = filteredTransactions
+      .filter((t) => t.group === "BAT_NGO")
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+      const totalSaveAndShare = filteredTransactions
+      .filter((t) => t.group === "SAVE_AND_SHARE")
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     return {
       totalIncome,
       totalExpense,
-      balance,
-      savingsRate: parseFloat(savingsRate.toFixed(1)),
+      totalSuddenly,
+      totalSaveAndShare
     };
   }, [filteredTransactions]);
 
   // Tính toán category stats từ filtered transactions
   const categoryExpenseStats: CategoryStat[] = useMemo(() => {
+    // const expenseTransactions = filteredTransactions.filter(
+    //   (t) => t.type === "expense"
+    // );
     const expenseTransactions = filteredTransactions.filter(
-      (t) => t.type === "expense"
+      (t) => t.group === "CHI_TIEU"
     );
     const totalExpense = expenseTransactions.reduce(
       (sum, t) => sum + Math.abs(t.amount),
@@ -111,7 +119,91 @@ export const useDashboard = () => {
   // Tính toán category stats từ filtered transactions
   const categoryIncomeStats: CategoryStat[] = useMemo(() => {
     const categoryIncomeStats = filteredTransactions.filter(
-      (t) => t.type === "income"
+      (t) => t.group === "THU_NHAP"
+    );
+    const totalIncome = categoryIncomeStats.reduce(
+      (sum, t) => sum + Math.abs(t.amount),
+      0
+    );
+
+    // Group by category
+    const categoryMap = new Map<string, number>();
+    categoryIncomeStats.forEach((t) => {
+      const current = categoryMap.get(t.category) || 0;
+      categoryMap.set(t.category, current + Math.abs(t.amount));
+    });
+
+    // Convert to array with colors
+    const colors = [
+      "#13c2c2",
+      "#eb2f96",
+      "#8c8c8c",
+      "#722ed1",
+      "#faad14",
+      "#52c41a",
+      "#1890ff",
+      "#ff4d4f",
+    ];
+
+    return Array.from(categoryMap.entries())
+      .map(([category, amount], index) => ({
+        category,
+        amount,
+        percentage:
+          totalIncome > 0
+            ? parseFloat(((amount / totalIncome) * 100).toFixed(1))
+            : 0,
+        color: colors[index % colors.length],
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [filteredTransactions]);
+
+  // Tính toán category stats từ filtered transactions
+  const categorySuddenStats: CategoryStat[] = useMemo(() => {
+    const categoryIncomeStats = filteredTransactions.filter(
+      (t) => t.group === "BAT_NGO"
+    );
+    const totalIncome = categoryIncomeStats.reduce(
+      (sum, t) => sum + Math.abs(t.amount),
+      0
+    );
+
+    // Group by category
+    const categoryMap = new Map<string, number>();
+    categoryIncomeStats.forEach((t) => {
+      const current = categoryMap.get(t.category) || 0;
+      categoryMap.set(t.category, current + Math.abs(t.amount));
+    });
+
+    // Convert to array with colors
+    const colors = [
+      "#13c2c2",
+      "#eb2f96",
+      "#8c8c8c",
+      "#722ed1",
+      "#faad14",
+      "#52c41a",
+      "#1890ff",
+      "#ff4d4f",
+    ];
+
+    return Array.from(categoryMap.entries())
+      .map(([category, amount], index) => ({
+        category,
+        amount,
+        percentage:
+          totalIncome > 0
+            ? parseFloat(((amount / totalIncome) * 100).toFixed(1))
+            : 0,
+        color: colors[index % colors.length],
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [filteredTransactions]);
+
+  // Tính toán category stats từ filtered transactions
+  const categorySaveAndShareStats: CategoryStat[] = useMemo(() => {
+    const categoryIncomeStats = filteredTransactions.filter(
+      (t) => t.group === "SAVE_AND_SHARE"
     );
     const totalIncome = categoryIncomeStats.reduce(
       (sum, t) => sum + Math.abs(t.amount),
@@ -177,27 +269,6 @@ export const useDashboard = () => {
     return last4Months;
   }, [transactions]);
 
-  // Thêm giao dịch mới
-  //   const addTransaction = (transaction: Omit<Transaction, "id">) => {
-  //     const newTransaction = {
-  //       ...transaction,
-  //       id: Math.max(...transactions.map((t) => t.id), 0) + 1,
-  //     };
-  //     setTransactions([newTransaction, ...transactions]);
-  //   };
-
-  //   // Xóa giao dịch
-  //   const deleteTransaction = (id: number) => {
-  //     setTransactions(transactions.filter((t) => t.id !== id));
-  //   };
-
-  //   // Cập nhật giao dịch
-  //   const updateTransaction = (id: number, updates: Partial<Transaction>) => {
-  //     setTransactions(
-  //       transactions.map((t) => (t.id === id ? { ...t, ...updates } : t))
-  //     );
-  //   };
-
   // Refresh data (có thể gọi API)
   const refreshData = async () => {
     setIsLoading(true);
@@ -248,6 +319,8 @@ export const useDashboard = () => {
     summary,
     categoryExpenseStats,
     categoryIncomeStats,
+    categorySaveAndShareStats,
+    categorySuddenStats,
     monthlyTrend,
 
     // Actions

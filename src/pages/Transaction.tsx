@@ -16,6 +16,7 @@ import {
   Form,
   InputNumber,
   Popconfirm,
+  Radio,
 } from "antd";
 import {
   PlusOutlined,
@@ -59,12 +60,13 @@ interface Transaction {
   type: "income" | "expense" | "suddenly";
   category: string;
   account_id: string;
+  group: string;
 }
 
 export default function Transactions() {
   const { user } = useAuth();
   const { accounts } = useAccounts(user?.id);
-  const { categories } = useCategories(user?.id);
+  const { categories, groups } = useCategories(user?.id);
   const { settings } = useSettings();
   const {
     transactions,
@@ -88,14 +90,24 @@ export default function Transactions() {
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
 
-  const categoriesByType = useMemo(() => {
+  const categoriesByGroup = useMemo(() => {
     return {
-      income: categories.filter((cat) => cat.type === "income"),
-      expense: categories.filter((cat) => cat.type === "expense"),
-      saving: categories.filter((cat) => cat.type === "saving"),
-      suddenly: categories.filter((cat) => cat.type === "suddenly"),
+      income: categories.filter((cat) => cat.group === "THU_NHAP"),
+      expense: categories.filter((cat) => cat.group === "CHI_TIEU"),
+      saving: categories.filter((cat) => cat.group === "SAVE_AND_SHARE"),
+      suddenly: categories.filter((cat) => cat.group === "BAT_NGO"),
     };
   }, [categories]);
+  const selectedGroup = Form.useWatch("group", form);
+  const groupMap: Record<string, keyof typeof categoriesByGroup> = {
+    THU_NHAP: "income",
+    CHI_TIEU: "expense",
+    SAVE_AND_SHARE: "saving",
+    BAT_NGO: "suddenly",
+  };
+
+  const currentGroup =
+    categoriesByGroup[groupMap[selectedGroup as keyof typeof groupMap]] || [];
 
   const allCategories = useMemo(() => {
     return categories.map((cat) => cat.name);
@@ -121,6 +133,10 @@ export default function Transactions() {
 
   const getCategoryByName = (name: string) => {
     return categories.find((cat) => cat.name === name);
+  };
+
+  const getGroupByKey = (key: string) => {
+    return groups.find((cat) => cat.key === key);
   };
 
   // Get category color
@@ -164,6 +180,7 @@ export default function Transactions() {
         type: values.type,
         category: values.category,
         account_id: values.account_id,
+        group: values.group,
       };
 
       if (editingTransaction) {
@@ -253,6 +270,38 @@ export default function Transactions() {
         </Tooltip>
       ),
     },
+    // {
+    //   title: "Mô tả",
+    //   dataIndex: "desc",
+    //   key: "desc",
+    //   ellipsis: { showTitle: false },
+    //   render: (desc: string, record: Transaction) => {
+    //     const category = getCategoryByName(record.category);
+    //     const group = getGroupByKey(record.group);
+    //     return (
+    //       <div>
+    //         <div className="font-medium">{desc}</div>
+    //         <div className="flex items-center mt-1">
+    //           <Tag color={getCategoryColor(record.category)}>
+    //             {category?.icon && (
+    //               <span className="mr-1">{category.icon}</span>
+    //             )}
+    //             {record.category}
+    //           </Tag>
+    //           <Tag color={getCategoryColor(record.category)}>
+    //             {category?.icon && (
+    //               <span className="mr-1">{category.icon}</span>
+    //             )}
+    //             {group?.name}
+    //           </Tag>
+    //           <Text type="secondary" className="text-xs ml-2">
+    //             {getAccountName(record.account_id)}
+    //           </Text>
+    //         </div>
+    //       </div>
+    //     );
+    //   },
+    // },
     {
       title: "Mô tả",
       dataIndex: "desc",
@@ -260,20 +309,57 @@ export default function Transactions() {
       ellipsis: { showTitle: false },
       render: (desc: string, record: Transaction) => {
         const category = getCategoryByName(record.category);
+        const group = getGroupByKey(record.group);
+
         return (
-          <div>
-            <div className="font-medium">{desc}</div>
-            <div className="flex items-center mt-1">
-              <Tag color={getCategoryColor(record.category)}>
+          <div className="flex flex-col gap-1">
+            {/* Mô tả chính */}
+            <div className="font-medium text-gray-900">
+              {desc || "(Không có mô tả)"}
+            </div>
+
+            {/* Category + Group */}
+            <div className="flex items-center flex-wrap gap-2 text-sm">
+              <Tag
+                color={getCategoryColor(record.category)}
+                style={{
+                  margin: 0,
+                  marginRight: 6,
+                  marginTop: 6,
+                  borderRadius: "6px",
+                  fontWeight: 500,
+                  padding: "2px 8px",
+                }}
+              >
                 {category?.icon && (
                   <span className="mr-1">{category.icon}</span>
                 )}
-                {record.category}
+                {category?.name || record.category}
               </Tag>
-              <Text type="secondary" className="text-xs ml-2">
-                {getAccountName(record.account_id)}
-              </Text>
+
+              {group && (
+                <Tag
+                  color="blue"
+                  style={{
+                    margin: 0,
+                    marginRight: 6,
+                    marginTop: 6,
+                    borderRadius: "6px",
+                    background: "#e6f4ff",
+                    color: "#1677ff",
+                    border: "none",
+                    padding: "2px 8px",
+                  }}
+                >
+                  {group.name}
+                </Tag>
+              )}
             </div>
+
+            {/* Tài khoản */}
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              💳 {record.category === 'Lương' ? 'Phân bổ' :getAccountName(record.account_id) || "Không rõ tài khoản"}
+            </Text>
           </div>
         );
       },
@@ -292,7 +378,7 @@ export default function Transactions() {
             className="font-bold text-lg"
             style={{ color: getTypeColor(amount) }}
           >
-            {record.type === 'income' ? "+" : "-"}
+            {record.type === "income" ? "+" : "-"}
             {formatCurrency(amount, settings?.currency || "VND")}
           </div>
         </div>
@@ -334,10 +420,15 @@ export default function Transactions() {
   ];
 
   useEffect(() => {
-    if (type === "income" && !category) {
+    if (type === "income") {
+      form.setFieldValue("group", "THU_NHAP");
       form.setFieldValue("category", "Lương");
+    } else if (type === "expense") {
+      // nếu muốn reset khi chuyển sang chi tiêu
+      form.setFieldValue("group", "CHI_TIEU");
+      form.setFieldValue("category", undefined);
     }
-  }, [type, category, form]);
+  }, [type, form]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen" style={{ padding: "24px" }}>
@@ -552,16 +643,39 @@ export default function Transactions() {
             </Col>
           </Row>
 
-          <Form.Item
-            label="Mô tả"
-            name="desc"
-            rules={[
-              { required: true, message: "Vui lòng nhập mô tả!" },
-              { min: 3, message: "Mô tả phải có ít nhất 3 ký tự!" },
-            ]}
-          >
-            <Input placeholder="Ví dụ: Ăn trưa tại nhà hàng..." size="large" />
-          </Form.Item>
+          {type === "income" ? (
+            <Form.Item
+              name="group"
+              label="Nhóm danh mục"
+              rules={[{ required: true, message: "Vui lòng chọn nhóm!" }]}
+            >
+              <Radio.Group optionType="button" buttonStyle="solid">
+                {groups
+                  .filter((g) => g.key === "THU_NHAP")
+                  .map((g) => (
+                    <Radio key={g.id} value={g.key}>
+                      {g.name}
+                    </Radio>
+                  ))}
+              </Radio.Group>
+            </Form.Item>
+          ) : (
+            <Form.Item
+              name="group"
+              label="Nhóm danh mục"
+              rules={[{ required: true, message: "Vui lòng chọn nhóm!" }]}
+            >
+              <Radio.Group optionType="button" buttonStyle="solid">
+                {groups
+                  .filter((g) => g.key !== "THU_NHAP")
+                  .map((g) => (
+                    <Radio key={g.id} value={g.key}>
+                      {g.name}
+                    </Radio>
+                  ))}
+              </Radio.Group>
+            </Form.Item>
+          )}
 
           <Row gutter={16}>
             <Col span={12}>
@@ -576,19 +690,12 @@ export default function Transactions() {
                   showSearch
                   optionFilterProp="children"
                 >
-                  {Form.useWatch("type", form) === "income"
-                    ? categoriesByType.income.map((cat) => (
-                        <Option key={cat.id} value={cat.name}>
-                          {cat.icon && <span className="mr-1">{cat.icon}</span>}
-                          {cat.name}
-                        </Option>
-                      ))
-                    : categoriesByType.expense.map((cat) => (
-                        <Option key={cat.id} value={cat.name}>
-                          {cat.icon && <span className="mr-1">{cat.icon}</span>}
-                          {cat.name}
-                        </Option>
-                      ))}
+                  {currentGroup.map((cat) => (
+                    <Option key={cat.id} value={cat.name}>
+                      {cat.icon && <span className="mr-1">{cat.icon}</span>}
+                      {cat.name}
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -631,6 +738,17 @@ export default function Transactions() {
               addonAfter={settings?.currency}
               min={0}
             />
+          </Form.Item>
+
+          <Form.Item
+            label="Mô tả"
+            name="desc"
+            rules={[
+              { required: true, message: "Vui lòng nhập mô tả!" },
+              { min: 3, message: "Mô tả phải có ít nhất 3 ký tự!" },
+            ]}
+          >
+            <Input placeholder="Ví dụ: Ăn trưa tại nhà hàng..." size="large" />
           </Form.Item>
         </Form>
       </Modal>

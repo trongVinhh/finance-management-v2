@@ -15,6 +15,7 @@ export interface Transaction {
   amount: number;
   type: "income" | "expense" | "suddenly";
   category: string;
+  group: string;
   account_id: string;
   created_at?: string;
   updated_at?: string;
@@ -27,6 +28,7 @@ interface CreateTransactionInput {
   type: "income" | "expense" | "suddenly";
   category: string;
   account_id: string;
+  group: string;
 }
 
 interface UpdateTransactionInput extends CreateTransactionInput {
@@ -117,6 +119,7 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
         type: data.type,
         category: data.category,
         account_id: data.account_id,
+        group: data.group,
       };
 
       if (
@@ -204,36 +207,116 @@ export const useTransactions = (userId?: string): UseTransactionsReturn => {
       const updateData = {
         date: data.date,
         desc: data.desc,
-        amount:
-          data.type === "expense"
-            ? -Math.abs(data.amount)
-            : Math.abs(data.amount),
+        amount: data.amount,
         type: data.type,
         category: data.category,
         account_id: data.account_id,
         updated_at: new Date().toISOString(),
+        group: data.group,
       };
+      console.log("Update");
 
       // Update transaction, amount of account
       const transaction = getTransactionById(data.id);
       const account = getAccountById(data.account_id);
 
-      if (!transaction || !account)
-        throw new Error("Transaction or account not found");
+      if (data.category === "Lương") {
+        const allocations = settings?.allocations;
+        if (allocations) {
+          let total = 0;
+          for (const { amount } of allocations) {
+            total += amount;
+          }
 
-      let newBalance = account.amount;
-      if (transaction.type === "expense" || transaction.type === "suddenly") {
-        newBalance += transaction.amount; // Hoàn tiền đã trừ
-      } else {
-        newBalance -= transaction.amount; // Hoàn tiền đã cộng
-      }
-      if (data.type === "expense" || data.type === "suddenly") {
-        newBalance -= data.amount;
-      } else {
-        newBalance += data.amount;
-      }
+          if (total > data.amount) {
+            notify(
+              "error",
+              "Thất bại!",
+              "Số tiền phân bổ lớn hơn tổng thu nhập!"
+            );
+            return null;
+          } else {
+            const allocations = settings?.allocations;
+            if (!allocations || allocations.length === 0) return null;
 
-      updateBalance(data.account_id, newBalance);
+            // 1. Hoàn tác giao dịch cũ (trả lại tiền đã cộng)
+            const oldAmount = Math.abs(transaction?.amount || 0);
+            let oldAllocated = 0;
+
+            for (const { amount, accountId } of allocations) {
+              if (accountId === settings.default_income_account_id) continue;
+
+              const acc = getAccountById(accountId);
+              if (!acc) continue;
+
+              const newBalance = acc.amount - amount; // trừ lại phần đã cộng
+              oldAllocated += amount;
+              updateBalance(accountId, newBalance);
+            }
+
+            const oldIncomeAcc = getAccountById(
+              settings.default_income_account_id!
+            );
+            if (oldIncomeAcc) {
+              const oldRemaining = oldAmount - oldAllocated;
+              updateBalance(
+                oldIncomeAcc.id,
+                oldIncomeAcc.amount - oldRemaining // trừ lại phần còn dư
+              );
+            }
+
+            // 2. Phân bổ lại theo số tiền mới
+            let amountAllocated = 0;
+            const total = allocations.reduce((sum, a) => sum + a.amount, 0);
+
+            if (total > data.amount) {
+              notify(
+                "error",
+                "Thất bại!",
+                "Số tiền phân bổ lớn hơn tổng thu nhập!"
+              );
+              return null;
+            }
+
+            for (const { amount, accountId } of allocations) {
+              if (accountId === settings.default_income_account_id) continue;
+
+              const acc = getAccountById(accountId);
+              if (!acc) continue;
+
+              const newAmount = acc.amount + amount;
+              amountAllocated += amount;
+              updateBalance(accountId, newAmount);
+            }
+
+            const incomeAcc = getAccountById(
+              settings.default_income_account_id!
+            );
+            if (incomeAcc) {
+              const remaining = data.amount - amountAllocated;
+              const newAmount = incomeAcc.amount + remaining;
+              updateBalance(incomeAcc.id, newAmount);
+            }
+          }
+        }
+      } else {
+        if (!transaction || !account)
+          throw new Error("Transaction or account not found");
+
+        let newBalance = account.amount;
+        if (transaction.type === "expense" || transaction.type === "suddenly") {
+          newBalance += transaction.amount; // Hoàn tiền đã trừ
+        } else {
+          newBalance -= transaction.amount; // Hoàn tiền đã cộng
+        }
+        if (data.type === "expense" || data.type === "suddenly") {
+          newBalance -= data.amount;
+        } else {
+          newBalance += data.amount;
+        }
+
+        updateBalance(data.account_id, newBalance);
+      }
 
       const { data: updatedTransaction, error } = await supabase
         .from("transactions")
