@@ -44,6 +44,9 @@ export const useDashboard = () => {
       return true;
     });
   }, [transactions, filterMode, selectedDate]);
+  const getTransactionsByCategory = (categoryName: string) => {
+    return transactions.filter((t) => t.category === categoryName);
+  };
 
   // Tính toán summary từ filtered transactions
   const summary: DashboardSummary = useMemo(() => {
@@ -324,6 +327,7 @@ export const useDashboard = () => {
     monthlyTrend,
 
     // Actions
+    getTransactionsByCategory,
     setFilterMode,
     setSelectedDate,
     refreshData,

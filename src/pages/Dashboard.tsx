@@ -5,6 +5,8 @@ import {
   Button,
   Typography,
   Statistic,
+  Modal,
+  Table,
 } from "antd";
 import {
   ArrowUpOutlined,
@@ -21,6 +23,7 @@ import { formatCurrency } from "../services/settings/enum/currency.enum";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import DashboardFilters from "../components/DashboardFilters";
+import { useState } from "react";
 
 const { Title, Text } = Typography;
 
@@ -34,43 +37,14 @@ export default function Dashboard() {
     categoryIncomeStats,
     categorySuddenStats,
     categorySaveAndShareStats,
+    getTransactionsByCategory,
     setFilterMode,
     setSelectedDate,
   } = useDashboard();
   const { settings } = useSettings();
-
-  // const transactionColumns = [
-  //   {
-  //     title: "Ngày",
-  //     dataIndex: "date",
-  //     key: "date",
-  //     render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
-  //     responsive: ["sm"] as any,
-  //   },
-  //   {
-  //     title: "Mô tả",
-  //     dataIndex: "desc",
-  //     key: "desc",
-  //     ellipsis: true,
-  //   },
-  //   {
-  //     title: "Danh mục",
-  //     dataIndex: "category",
-  //     key: "category",
-  //     render: (category: string) => <Tag color="blue">{category}</Tag>,
-  //     responsive: ["md"] as any,
-  //   },
-  //   {
-  //     title: "Số tiền",
-  //     dataIndex: "amount",
-  //     key: "amount",
-  //     render: (amount: number) => (
-  //       <Text type={amount > 0 ? "success" : "danger"}>
-  //         {formatCurrency(Math.abs(amount), settings?.currency || "VND")}
-  //       </Text>
-  //     ),
-  //   },
-  // ];
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryTransactions, setCategoryTransactions] = useState<any[]>([]);
 
   const handleFilterChange = (
     date: Dayjs | null,
@@ -84,6 +58,12 @@ export default function Dashboard() {
     } else if (mode === "all") {
       setSelectedDate(dayjs()); // Reset về hiện tại
     }
+  };
+
+  const handleSliceClick = (item: any) => {
+    setSelectedCategory(item.category);
+    setCategoryTransactions(getTransactionsByCategory(item.category));
+    setOpenModal(true);
   };
 
   return (
@@ -265,12 +245,14 @@ export default function Dashboard() {
           <CategoryPieChart
             title="Phân bổ chi tiêu theo: Chi tiêu"
             data={categoryExpenseStats}
+            onSliceClick={handleSliceClick}
           />
         </Col>
         <Col xs={24} lg={12}>
           <CategoryPieChart
             title="Phân bổ chi tiêu theo: Save & share"
             data={categorySaveAndShareStats}
+            onSliceClick={handleSliceClick}
           />
         </Col>
       </Row>
@@ -280,85 +262,17 @@ export default function Dashboard() {
           <CategoryPieChart
             title="Phân bổ chi tiêu theo: Bất ngờ"
             data={categorySuddenStats}
+            onSliceClick={handleSliceClick}
           />
         </Col>
         <Col xs={24} lg={12}>
           <CategoryPieChart
             title="Phân bổ thu nhập theo: Thu nhập"
             data={categoryIncomeStats}
+            onSliceClick={handleSliceClick}
           />
         </Col>
       </Row>
-
-      {/* Xu hướng thu chi - Optional, có thể bật lại */}
-      {/* {monthlyTrend && monthlyTrend.length > 0 && (
-        <Card
-          title="Xu hướng thu chi hàng tháng"
-          extra={<RiseOutlined style={{ fontSize: 18 }} />}
-          style={{ marginBottom: "16px" }}
-        >
-          <List
-            dataSource={monthlyTrend}
-            renderItem={(item) => (
-              <List.Item>
-                <Row style={{ width: "100%" }} gutter={[8, 8]}>
-                  <Col xs={24} sm={6}>
-                    <Text strong>{item.month}</Text>
-                  </Col>
-                  <Col xs={12} sm={9}>
-                    <Space direction="vertical" size={0}>
-                      <Text
-                        type="success"
-                        style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}
-                      >
-                        <ArrowUpOutlined /> Thu:{" "}
-                        {formatCurrency(
-                          item.income,
-                          settings?.currency || "VND"
-                        )}
-                      </Text>
-                      <Text
-                        type="danger"
-                        style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}
-                      >
-                        <ArrowDownOutlined /> Chi:{" "}
-                        {formatCurrency(
-                          item.expense,
-                          settings?.currency || "VND"
-                        )}
-                      </Text>
-                    </Space>
-                  </Col>
-                  <Col xs={12} sm={9}>
-                    <Text
-                      type="secondary"
-                      style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.875rem)" }}
-                    >
-                      Tiết kiệm:{" "}
-                      {formatCurrency(
-                        item.income - item.expense,
-                        settings?.currency || "VND"
-                      )}
-                    </Text>
-                  </Col>
-                </Row>
-              </List.Item>
-            )}
-          />
-        </Card>
-      )} */}
-
-      {/* Giao dịch gần đây */}
-      {/* <Card title="Giao dịch gần đây">
-        <Table
-          dataSource={transactions}
-          columns={transactionColumns}
-          pagination={{ pageSize: 5, simple: true }}
-          size="small"
-          rowKey="id"
-          scroll={{ x: 400 }}
-        />
-      </Card> */}
 
       {/* Thao tác nhanh - Optional */}
       <Card title="Thao tác nhanh" style={{ marginTop: "16px" }}>
@@ -408,6 +322,62 @@ export default function Dashboard() {
           </Col>
         </Row>
       </Card>
+
+      {/* Modal giao dịch */}
+      <Modal
+        title={
+          <span>
+            📊 Giao dịch trong danh mục{" "}
+            <b style={{ color: "#1677ff" }}>{selectedCategory}</b>
+          </span>
+        }
+        closable={true}
+        open={openModal}
+        onCancel={() => {
+          setSelectedCategory(null);
+          setOpenModal(false);
+        }}
+        width="70%"
+        footer={null}
+        centered
+      >
+        <Table
+          columns={[
+            {
+              title: "Ngày",
+              dataIndex: "date",
+              key: "date",
+              render: (date: string) => (
+                <div className="flex items-center">
+                  {dayjs(date).format("DD/MM/YYYY")}
+                </div>
+              ),
+            },
+            {
+              title: "Số tiền",
+              dataIndex: "amount",
+              key: "amount",
+            },
+            {
+              title: "Ghi chú",
+              dataIndex: "desc",
+              key: "desc",
+              ellipsis: true,
+              render: (note: string) => (
+                <span style={{ color: "#555" }}>
+                  {note || "(Không có ghi chú)"}
+                </span>
+              ),
+            },
+          ]}
+          dataSource={categoryTransactions}
+          rowKey="id"
+          pagination={{ pageSize: 20 }}
+          locale={{ emptyText: "Không có giao dịch nào trong danh mục này." }}
+          scroll={{ y: 400 }}
+          style={{ marginTop: 8 }}
+        />
+      </Modal>
     </div>
   );
 }
