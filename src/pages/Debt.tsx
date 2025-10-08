@@ -165,7 +165,7 @@ export default function Debts() {
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
           <Form.Item
-            name="name"
+            name="lender_name"
             label="Tên người nợ"
             rules={[{ required: true }]}
           >
