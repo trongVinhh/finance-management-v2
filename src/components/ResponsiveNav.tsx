@@ -12,6 +12,7 @@ import {
   TagsOutlined,
   CreditCardOutlined,
   MoneyCollectOutlined,
+  AccountBookOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -43,6 +44,7 @@ export default function ResponsiveNav({ children }: ResponsiveNavProps) {
     { key: '/expense', label: <Link to="/expense">Chi</Link>, icon: <ArrowDownOutlined /> },
     { key: '/debts', label: <Link to="/debts">Quản lí nợ</Link>, icon: <MoneyCollectOutlined /> },
     { key: '/loans', label: <Link to="/loans">Quản lí vay</Link>, icon: <CreditCardOutlined  /> },
+    { key: '/personal-accounts', label: <Link to="/personal-accounts">Tài khoản cá nhân</Link>, icon: <AccountBookOutlined  /> },
     { key: '/settings', label: <Link to="/settings">Cài đặt</Link>, icon: <SettingOutlined /> },
     {
       key: 'logout',

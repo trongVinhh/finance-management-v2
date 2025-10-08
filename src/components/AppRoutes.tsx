@@ -12,6 +12,7 @@ import Income from "../pages/Income";
 import Expense from "../pages/Expense";
 import Debts from "../pages/Debt";
 import Loans from "../pages/Loans";
+import PersonalAccount from "../pages/PersonalAccount";
 
 
 const AppRoutes = () => {
@@ -101,6 +102,17 @@ const AppRoutes = () => {
             <ProtectedRoute>
               <AppLayout>
                 <Loans />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/personal-accounts"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <PersonalAccount />
               </AppLayout>
             </ProtectedRoute>
           }
