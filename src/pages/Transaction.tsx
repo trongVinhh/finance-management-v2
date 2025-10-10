@@ -81,6 +81,9 @@ export default function Transactions() {
     getTotalExpense,
     getNetAmount,
   } = useTransactions(user?.id);
+  const [totalIncome, setTotalIncome] = useState(getTotalIncome());
+  const [totalExpense, setTotalExpense] = useState(getTotalExpense());
+  const [netAmount, setNetAmount] = useState(getNetAmount());
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -113,9 +116,9 @@ export default function Transactions() {
     return categories.map((cat) => cat.name);
   }, [categories]);
 
-  const totalIncome = getTotalIncome();
-  const totalExpense = getTotalExpense();
-  const netAmount = getNetAmount();
+  // const totalIncome = getTotalIncome();
+  // const totalExpense = getTotalExpense();
+  // const netAmount = getNetAmount();
   const type = Form.useWatch("type", form);
   const category = Form.useWatch("category", form);
 
@@ -217,6 +220,18 @@ export default function Transactions() {
     return matchSearch && matchCategory && matchDate;
   });
 
+  useEffect(() => {
+    const income = filteredData
+      .filter((t) => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0);
+    const expense = filteredData
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0);
+    setTotalIncome(income)
+    setTotalExpense(expense);
+    setNetAmount(income - expense)
+  }, [dateRange]);
+
   // Get account name by id
   const getAccountName = (accountId: string) => {
     const account = accounts.find((a) => a.id === accountId);
@@ -270,38 +285,6 @@ export default function Transactions() {
         </Tooltip>
       ),
     },
-    // {
-    //   title: "Mô tả",
-    //   dataIndex: "desc",
-    //   key: "desc",
-    //   ellipsis: { showTitle: false },
-    //   render: (desc: string, record: Transaction) => {
-    //     const category = getCategoryByName(record.category);
-    //     const group = getGroupByKey(record.group);
-    //     return (
-    //       <div>
-    //         <div className="font-medium">{desc}</div>
-    //         <div className="flex items-center mt-1">
-    //           <Tag color={getCategoryColor(record.category)}>
-    //             {category?.icon && (
-    //               <span className="mr-1">{category.icon}</span>
-    //             )}
-    //             {record.category}
-    //           </Tag>
-    //           <Tag color={getCategoryColor(record.category)}>
-    //             {category?.icon && (
-    //               <span className="mr-1">{category.icon}</span>
-    //             )}
-    //             {group?.name}
-    //           </Tag>
-    //           <Text type="secondary" className="text-xs ml-2">
-    //             {getAccountName(record.account_id)}
-    //           </Text>
-    //         </div>
-    //       </div>
-    //     );
-    //   },
-    // },
     {
       title: "Mô tả",
       dataIndex: "desc",
@@ -358,7 +341,10 @@ export default function Transactions() {
 
             {/* Tài khoản */}
             <Text type="secondary" style={{ fontSize: "12px" }}>
-              💳 {record.category === 'Lương' ? 'Phân bổ' :getAccountName(record.account_id) || "Không rõ tài khoản"}
+              💳{" "}
+              {record.category === "Lương"
+                ? "Phân bổ"
+                : getAccountName(record.account_id) || "Không rõ tài khoản"}
             </Text>
           </div>
         );
