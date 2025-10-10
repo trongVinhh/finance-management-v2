@@ -41,7 +41,7 @@ export default function Debts() {
     try {
       if (editingDebt) {
         await updateDebt(editingDebt.id, {
-          lender_name: values.name,
+          lender_name: values.lender_name,
           amount: values.amount,
           status: values.status,
           note: values.note,
@@ -49,7 +49,7 @@ export default function Debts() {
         notify("success", "Thành công!", "Cập nhật thành công!");
       } else {
         await addDebt({
-          lender_name: values.name,
+          lender_name: values.lender_name,
           amount: values.amount,
           status: values.status,
           note: values.note,
@@ -82,6 +82,11 @@ export default function Debts() {
       dataIndex: "amount",
       key: "amount",
       render: (a: number) => a.toLocaleString("vi-VN") + " ₫",
+    },
+    {
+      title: "Ghi chú",
+      dataIndex: "note",
+      key: "note",
     },
     {
       title: "Trạng thái",
