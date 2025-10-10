@@ -357,6 +357,11 @@ export default function Dashboard() {
               title: "Số tiền",
               dataIndex: "amount",
               key: "amount",
+              render: (amount: number) => (
+                <span>
+                  {formatCurrency(amount, settings?.currency || 'VND')}
+                </span>
+              ),
             },
             {
               title: "Ghi chú",

@@ -45,7 +45,15 @@ export const useDashboard = () => {
     });
   }, [transactions, filterMode, selectedDate]);
   const getTransactionsByCategory = (categoryName: string) => {
-    return transactions.filter((t) => t.category === categoryName);
+    return transactions.filter((t) => {
+      const d = dayjs(t.date);
+      if (filterMode === "month") {
+        return d.isSame(selectedDate, "month");
+      } else if (filterMode === "year") {
+        return d.isSame(selectedDate, "year");
+      }
+      return true;
+    }).filter((t) => t.category === categoryName);
   };
 
   // Tính toán summary từ filtered transactions
