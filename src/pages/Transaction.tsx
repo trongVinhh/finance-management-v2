@@ -89,7 +89,7 @@ export default function Transactions() {
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | []>([]);
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | []>([dayjs().startOf('month'), dayjs()]);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
 
@@ -230,7 +230,7 @@ export default function Transactions() {
     setTotalIncome(income)
     setTotalExpense(expense);
     setNetAmount(income - expense)
-  }, [dateRange]);
+  }, [transactions, dateRange]);
 
   // Get account name by id
   const getAccountName = (accountId: string) => {
