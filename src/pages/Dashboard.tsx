@@ -175,7 +175,7 @@ export default function Dashboard() {
             }}
           >
             <Statistic
-              title="Tổng Chi Tiêu"
+              title="Chi tiêu thông thường"
               value={summary.totalExpense}
               precision={0}
               valueStyle={{
@@ -199,7 +199,7 @@ export default function Dashboard() {
             }}
           >
             <Statistic
-              title="Tổng Save & Share"
+              title="Chi tiêu từ Save & Share"
               value={summary.totalSaveAndShare}
               precision={0}
               valueStyle={{
@@ -223,7 +223,7 @@ export default function Dashboard() {
             }}
           >
             <Statistic
-              title="Tổng Bất Ngờ"
+              title="Chi tiêu bất ngờ"
               value={summary.totalSuddenly}
               precision={0}
               valueStyle={{
