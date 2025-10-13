@@ -8,6 +8,7 @@ import {
 } from "react";
 import { supabase } from "../lib/supabase";
 import { useInitDefaults } from "../hooks/useInitDefault";
+import { useNotify } from "./NotifycationContext";
 
 type AuthContextType = {
   user: any;
@@ -29,9 +30,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [userSettings, setUserSettings] = useState<any>(null);
   const { initDefaults } = useInitDefaults();
+  const notify = useNotify();
 
   // Lấy session ban đầu
   useEffect(() => {
+    const loginTime = parseInt(localStorage.getItem("login_time") || "0", 10);
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+
+    if (loginTime && now - loginTime > fiveMinutes) {
+      notify('error', 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      logout();
+      setLoading(false);
+      return;
+    }
+
     const initAuth = async () => {
       const {
         data: { session },
@@ -50,6 +63,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setUser(null);
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) fetchUserSettings(session.user.id);
@@ -80,6 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) throw error;
     if (data.user) {
       localStorage.setItem("user_id", data.user.id);
+      localStorage.setItem("login_time", Date.now().toString());
       setUser(data.user);
       await fetchUserSettings(data.user.id);
     }
