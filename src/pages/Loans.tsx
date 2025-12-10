@@ -148,7 +148,7 @@ export default function Loans() {
         columns={columns}
         dataSource={loans}
         rowKey="id"
-        pagination={{ pageSize: 5 }}
+        pagination={{ pageSize: 100 }}
         scroll={{ x: true }}
       />
 
