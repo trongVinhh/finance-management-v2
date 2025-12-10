@@ -153,7 +153,7 @@ export default function Debts() {
         columns={columns}
         dataSource={debts}
         rowKey="id"
-        pagination={{ pageSize: 5 }}
+        pagination={{ pageSize: 100 }}
         scroll={{ x: true }}
       />
 
