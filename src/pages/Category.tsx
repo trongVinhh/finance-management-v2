@@ -11,6 +11,7 @@ import {
   Tag,
   Popconfirm,
   Radio,
+  Grid,
 } from "antd";
 import {
   PlusOutlined,
@@ -20,6 +21,9 @@ import {
 } from "@ant-design/icons";
 import { useAuth } from "../contexts/AuthContext";
 import { useCategories } from "../services/categories/useCategories";
+import CategoryListMobile from "../components/categories/CategoryListMobile";
+
+const { useBreakpoint } = Grid;
 
 type Category = {
   id: string;
@@ -36,6 +40,7 @@ export default function Category() {
   const { user } = useAuth();
   const { categories, groups, addCategory, updateCategory, deleteCategory } =
     useCategories(user?.id);
+  const screens = useBreakpoint();
 
   const showModal = (category?: Category) => {
     if (category) {
@@ -77,7 +82,7 @@ export default function Category() {
       title: "Loại",
       dataIndex: "type",
       key: "type",
-      filters: [{ text: "Thu nhập", value:  "income"}, { text: "Chi tiêu", value:  "expense"}],
+      filters: [{ text: "Thu nhập", value: "income" }, { text: "Chi tiêu", value: "expense" }],
       onFilter: (value: any, record: Category) => record.type === value,
       render: (type: string) =>
         type === "income" ? (
@@ -144,16 +149,25 @@ export default function Category() {
             icon={<PlusOutlined />}
             onClick={() => showModal()}
           >
-            Thêm danh mục
+            {screens.md ? "Thêm danh mục" : ""}
           </Button>
         }
       >
-        <Table
-          dataSource={categories as Category[]}
-          columns={columns}
-          rowKey="id"
-          pagination={{ pageSize: 20 }}
-        />
+        {!screens.md ? (
+          <CategoryListMobile
+            data={categories as Category[]} // Cast to match props if needed
+            groups={groups}
+            onEdit={showModal}
+            onDelete={handleDelete}
+          />
+        ) : (
+          <Table
+            dataSource={categories as Category[]}
+            columns={columns}
+            rowKey="id"
+            pagination={{ pageSize: 20 }}
+          />
+        )}
       </Card>
 
       {/* Modal thêm/sửa danh mục */}

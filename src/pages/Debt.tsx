@@ -14,18 +14,21 @@ import {
   Popconfirm,
   Space,
   Tag,
+  Grid,
   Statistic,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useDebts } from "../services/debts/useDebts";
 import { useNotify } from "../contexts/NotifycationContext";
+import DebtListMobile from "../components/debts/DebtListMobile";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 
 interface Debt {
   id: string;
-  name: string;
+  lender_name: string; // Updated to match usage
   amount: number;
   status: "unpaid" | "paid";
   note?: string;
@@ -37,6 +40,7 @@ export default function Debts() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [form] = Form.useForm();
+  const screens = useBreakpoint();
 
   const totalPaid = debts?.reduce(
     (acc, curr) => (curr.status === "paid" ? acc + curr.amount : acc),
@@ -143,7 +147,7 @@ export default function Debts() {
             </Title>
             <Text type="secondary">Theo dõi các khoản người khác nợ bạn</Text>
           </Col>
-          <Col xs={24} sm={12} style={{ textAlign: "right" }}>
+          <Col xs={24} sm={12} style={{ textAlign: !screens.md ? "left" : "right" }}>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -152,40 +156,53 @@ export default function Debts() {
                 setEditingDebt(null);
                 form.resetFields();
               }}
+              block={!screens.md}
             >
               Thêm khoản nợ
             </Button>
           </Col>
         </Row>
-        <Row gutter={16} style={{ marginTop: 24 }}>
-          <Col span={12}>
+        <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+          <Col xs={12} sm={12}>
             <Statistic
               title="Tổng đã thu"
               value={totalPaid}
               precision={0}
               suffix="₫"
-              valueStyle={{ color: "#3f8600" }}
+              valueStyle={{ color: "#3f8600", fontSize: !screens.md ? "1.25rem" : "1.5rem" }}
             />
           </Col>
-          <Col span={12}>
+          <Col xs={12} sm={12}>
             <Statistic
               title="Tổng chưa thu"
               value={totalUnpaid}
               precision={0}
               suffix="₫"
-              valueStyle={{ color: "#cf1322" }}
+              valueStyle={{ color: "#cf1322", fontSize: !screens.md ? "1.25rem" : "1.5rem" }}
             />
           </Col>
         </Row>
       </Card>
 
-      <Table
-        columns={columns}
-        dataSource={debts}
-        rowKey="id"
-        pagination={{ pageSize: 100 }}
-        scroll={{ x: true }}
-      />
+      {!screens.md ? (
+        <DebtListMobile
+          data={debts as unknown as Debt[]}
+          onEdit={(record) => {
+            setEditingDebt(record);
+            setIsModalOpen(true);
+            form.setFieldsValue(record);
+          }}
+          onDelete={(id) => handleDelete(id)}
+        />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={debts}
+          rowKey="id"
+          pagination={{ pageSize: 100 }}
+          scroll={{ x: true }}
+        />
+      )}
 
       <Modal
         title={editingDebt ? "Chỉnh sửa khoản nợ" : "Thêm khoản nợ"}

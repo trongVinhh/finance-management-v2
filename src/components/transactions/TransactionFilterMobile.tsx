@@ -2,7 +2,6 @@ import { Collapse, Input, Select, DatePicker, Button } from "antd";
 import { FilterOutlined, SearchOutlined } from "@ant-design/icons";
 import { Dayjs } from "dayjs";
 
-const { Search } = Input;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
@@ -32,13 +31,13 @@ export default function TransactionFilterMobile({
             ghost
             bordered={false}
             expandIconPosition="end"
-            style={{ background: "transparent" }}
+            className="bg-white rounded-lg"
         >
             <Collapse.Panel
                 header={
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 0" }}>
-                        <FilterOutlined style={{ fontSize: "14px", color: "#1890ff" }} />
-                        <span style={{ fontWeight: 500, fontSize: "14px" }}>Bộ lọc</span>
+                        <FilterOutlined style={{ fontSize: "16px", color: "#1890ff" }} />
+                        <span style={{ fontWeight: 600, fontSize: "15px", color: "#1f1f1f" }}>Bộ lọc tìm kiếm</span>
                     </div>
                 }
                 key="1"
@@ -48,17 +47,18 @@ export default function TransactionFilterMobile({
                     style={{
                         display: "flex",
                         flexDirection: "column",
-                        gap: "12px",
-                        paddingTop: "8px",
+                        gap: "16px",
+                        padding: "0 0 12px 0",
                     }}
                 >
-                    <Search
+                    <Input
                         placeholder="Tìm kiếm mô tả..."
                         allowClear
                         value={searchText}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        prefix={<SearchOutlined />}
-                        size="middle"
+                        prefix={<SearchOutlined className="text-gray-400" />}
+                        size="large"
+                        className="rounded-md"
                     />
 
                     <Select
@@ -68,6 +68,7 @@ export default function TransactionFilterMobile({
                         onChange={onCategoryChange}
                         className="w-full"
                         size="large"
+                        style={{ width: "100%" }}
                     >
                         {allCategories.map((cat) => (
                             <Option key={cat} value={cat}>
@@ -85,13 +86,17 @@ export default function TransactionFilterMobile({
                         className="w-full"
                         format="DD/MM/YYYY"
                         size="large"
+                        style={{ width: "100%" }}
                     />
 
                     <Button
                         block
+                        type="default"
+                        danger
                         icon={<FilterOutlined />}
                         onClick={onClearFilters}
                         size="large"
+                        className="mt-2"
                     >
                         Xóa bộ lọc
                     </Button>

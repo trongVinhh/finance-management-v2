@@ -16,6 +16,7 @@ import {
   Form,
   Grid,
   Popconfirm,
+  FloatButton,
 } from "antd";
 import TransactionForm from "../components/transactions/TransactionForm";
 import TransactionListMobile from "../components/transactions/TransactionListMobile";
@@ -413,75 +414,72 @@ export default function Transactions() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen" style={{ padding: "24px" }}>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <Row gutter={[16, 16]} align="middle" justify="space-between">
-          <Col xs={24} sm={12}>
-            <Title level={2} style={{ margin: 0 }}>
+          <Col>
+            <Title level={3} style={{ margin: 0 }}>
               Quản lý giao dịch
             </Title>
-            <Text type="secondary">
-              Theo dõi thu chi và quản lý tài chính cá nhân
+            <Text type="secondary" style={{ fontSize: "13px" }}>
+              Theo dõi thu chi và quản lý tài chính
             </Text>
           </Col>
-          <Col xs={24} sm={12} style={{ textAlign: isMobile ? "left" : "right" }}>
-            <Space wrap size={8}>
-              {!isMobile && (
-                <>
-                  <Button icon={<ImportOutlined />}>Nhập Excel</Button>
-                  <Button icon={<ExportOutlined />}>Xuất Excel</Button>
-                </>
-              )}
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleAddTransaction}
-                block={isMobile}
-              >
-                Thêm giao dịch
-              </Button>
-            </Space>
+          <Col>
+            {!isMobile && (
+              <Space wrap size={8}>
+                <Button icon={<ImportOutlined />}>Nhập Excel</Button>
+                <Button icon={<ExportOutlined />}>Xuất Excel</Button>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddTransaction}
+                >
+                  Thêm giao dịch
+                </Button>
+              </Space>
+            )}
           </Col>
         </Row>
       </div>
 
       {/* Statistics */}
-      <Row gutter={[16, 16]} className="mb-6">
-        <Col xs={24} sm={8}>
-          <Card bodyStyle={{ padding: isMobile ? "12px 16px" : "24px" }}>
+      <Row gutter={[12, 12]} className="mb-4">
+        <Col xs={12} sm={8}>
+          <Card bodyStyle={{ padding: "16px" }} className="shadow-sm">
             <Statistic
-              title="Thu nhập"
+              title={<span className="text-sm text-gray-500">Thu nhập</span>}
               value={totalIncome}
               precision={0}
-              valueStyle={{ color: "#3f8600", fontSize: isMobile ? "20px" : "24px" }}
-              prefix={<ArrowUpOutlined />}
-              suffix={settings?.currency}
+              valueStyle={{ color: "#3f8600", fontSize: isMobile ? "18px" : "24px", fontWeight: 600 }}
+              prefix={<ArrowUpOutlined style={{ fontSize: "16px" }} />}
+              suffix={<span className="text-xs text-gray-400 ml-1">{settings?.currency}</span>}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
-          <Card bodyStyle={{ padding: isMobile ? "12px 16px" : "24px" }}>
+        <Col xs={12} sm={8}>
+          <Card bodyStyle={{ padding: "16px" }} className="shadow-sm">
             <Statistic
-              title="Chi tiêu"
+              title={<span className="text-sm text-gray-500">Chi tiêu</span>}
               value={totalExpense}
               precision={0}
-              valueStyle={{ color: "#cf1322", fontSize: isMobile ? "20px" : "24px" }}
-              prefix={<ArrowDownOutlined />}
-              suffix={settings?.currency}
+              valueStyle={{ color: "#cf1322", fontSize: isMobile ? "18px" : "24px", fontWeight: 600 }}
+              prefix={<ArrowDownOutlined style={{ fontSize: "16px" }} />}
+              suffix={<span className="text-xs text-gray-400 ml-1">{settings?.currency}</span>}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
-          <Card bodyStyle={{ padding: isMobile ? "12px 16px" : "24px" }}>
+          <Card bodyStyle={{ padding: "16px" }} className="shadow-sm">
             <Statistic
-              title="Số dư ròng"
+              title={<span className="text-sm text-gray-500">Số dư ròng</span>}
               value={netAmount}
               precision={0}
               valueStyle={{
                 color: netAmount >= 0 ? "#3f8600" : "#cf1322",
-                fontSize: isMobile ? "20px" : "24px"
+                fontSize: isMobile ? "18px" : "24px", fontWeight: 600
               }}
-              prefix={<SwapOutlined />}
-              suffix={settings?.currency}
+              prefix={<SwapOutlined style={{ fontSize: "16px" }} />}
+              suffix={<span className="text-xs text-gray-400 ml-1">{settings?.currency}</span>}
             />
           </Card>
         </Col>
@@ -634,6 +632,16 @@ export default function Transactions() {
         </Modal>
       )
       }
+
+      {/* Mobile Floating Action Button */}
+      {isMobile && (
+        <FloatButton
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleAddTransaction}
+          style={{ right: 24, bottom: 24, width: 50, height: 50 }}
+        />
+      )}
     </div >
   );
 }
