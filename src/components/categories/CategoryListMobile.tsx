@@ -1,4 +1,4 @@
-import { List, Card, Tag, Button, Typography, Popconfirm, Space } from "antd";
+import { List, Card, Tag, Button, Typography, Popconfirm } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
 const { Text, Title } = Typography;
