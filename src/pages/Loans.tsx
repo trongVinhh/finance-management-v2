@@ -14,13 +14,17 @@ import {
   Popconfirm,
   Space,
   Tag,
+  Statistic,
+  Grid,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useLoans } from "../services/loans/useLoans";
 import { useNotify } from "../contexts/NotifycationContext";
+import LoanListMobile from "../components/loans/LoanListMobile";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 
 interface Loan {
   id: string;
@@ -36,6 +40,16 @@ export default function Loans() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
   const [form] = Form.useForm();
+  const screens = useBreakpoint();
+
+  const totalPaid = loans?.reduce(
+    (acc, curr) => (curr.status === "paid" ? acc + curr.amount : acc),
+    0
+  ) || 0;
+  const totalUnpaid = loans?.reduce(
+    (acc, curr) => (curr.status === "pending" ? acc + curr.amount : acc),
+    0
+  ) || 0;
 
   const handleSave = async (values: any) => {
     try {
@@ -128,7 +142,7 @@ export default function Loans() {
             </Title>
             <Text type="secondary">Theo dõi các khoản bạn vay người khác</Text>
           </Col>
-          <Col xs={24} sm={12} style={{ textAlign: "right" }}>
+          <Col xs={24} sm={12} style={{ textAlign: !screens.md ? "left" : "right" }}>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -137,20 +151,53 @@ export default function Loans() {
                 setEditingLoan(null);
                 form.resetFields();
               }}
+              block={!screens.md}
             >
               Thêm khoản vay
             </Button>
           </Col>
         </Row>
+        <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+          <Col xs={12} sm={12}>
+            <Statistic
+              title="Tổng đã trả"
+              value={totalPaid}
+              precision={0}
+              suffix="₫"
+              valueStyle={{ color: "#3f8600", fontSize: !screens.md ? "1.25rem" : "1.5rem" }}
+            />
+          </Col>
+          <Col xs={12} sm={12}>
+            <Statistic
+              title="Tổng chưa trả"
+              value={totalUnpaid}
+              precision={0}
+              suffix="₫"
+              valueStyle={{ color: "#cf1322", fontSize: !screens.md ? "1.25rem" : "1.5rem" }}
+            />
+          </Col>
+        </Row>
       </Card>
 
-      <Table
-        columns={columns}
-        dataSource={loans}
-        rowKey="id"
-        pagination={{ pageSize: 100 }}
-        scroll={{ x: true }}
-      />
+      {!screens.md ? (
+        <LoanListMobile
+          data={loans as unknown as Loan[]}
+          onEdit={(record) => {
+            setEditingLoan(record);
+            setIsModalOpen(true);
+            form.setFieldsValue(record);
+          }}
+          onDelete={(id) => handleDelete(id)}
+        />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={loans}
+          rowKey="id"
+          pagination={{ pageSize: 100 }}
+          scroll={{ x: true }}
+        />
+      )}
 
       <Modal
         title={editingLoan ? "Chỉnh sửa khoản vay" : "Thêm khoản vay"}
@@ -195,6 +242,6 @@ export default function Loans() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </div >
   );
 }

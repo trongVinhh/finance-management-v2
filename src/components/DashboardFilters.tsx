@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Select, DatePicker, Row, Col } from "antd";
+import { Select, DatePicker, Row, Col, Grid } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 
 type FilterMode = "month" | "year" | "all";
 
@@ -18,6 +19,7 @@ export default function DashboardFilters({
   onFilterChange,
 }: DashboardFiltersProps) {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+  const screens = useBreakpoint();
 
   const handleFilterChange = (value: FilterMode) => {
     setFilterMode(value);
@@ -34,13 +36,19 @@ export default function DashboardFilters({
     onFilterChange(newDate, filterMode);
   };
 
+  // On mobile (xs) width is 100%, otherwise fixed 150px
+  const inputStyle = {
+    width: !screens.sm ? "100%" : 150,
+  };
+
   return (
-    <Row gutter={[8, 8]}>
-      <Col>
+    <Row gutter={[8, 8]} style={{ marginTop: 12 }}>
+      <Col xs={24} sm="auto">
         <Select<FilterMode>
           value={filterMode}
           onChange={handleFilterChange}
-          style={{ width: 160 }}
+          style={inputStyle}
+          size="middle"
         >
           <Option value="month">Theo tháng</Option>
           <Option value="year">Theo năm</Option>
@@ -48,7 +56,7 @@ export default function DashboardFilters({
         </Select>
       </Col>
 
-      <Col>
+      <Col xs={24} sm="auto">
         {filterMode !== "all" && (
           <DatePicker
             picker={filterMode}
@@ -56,6 +64,8 @@ export default function DashboardFilters({
             onChange={handleDateChange}
             format={filterMode === "month" ? "MM/YYYY" : "YYYY"}
             allowClear={false}
+            size="middle"
+            style={inputStyle}
           />
         )}
       </Col>
