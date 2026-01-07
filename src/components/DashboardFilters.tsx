@@ -35,12 +35,13 @@ export default function DashboardFilters({
   };
 
   return (
-    <Row gutter={[8, 8]}>
-      <Col>
+    <Row gutter={[8, 8]} style={{ marginTop: 12 }}>
+      <Col xs={12} sm="auto">
         <Select<FilterMode>
           value={filterMode}
           onChange={handleFilterChange}
-          style={{ width: 160 }}
+          style={{ width: "100%" }}
+          size="middle"
         >
           <Option value="month">Theo tháng</Option>
           <Option value="year">Theo năm</Option>
@@ -48,7 +49,7 @@ export default function DashboardFilters({
         </Select>
       </Col>
 
-      <Col>
+      <Col xs={12} sm="auto">
         {filterMode !== "all" && (
           <DatePicker
             picker={filterMode}
@@ -56,6 +57,8 @@ export default function DashboardFilters({
             onChange={handleDateChange}
             format={filterMode === "month" ? "MM/YYYY" : "YYYY"}
             allowClear={false}
+            size="middle"
+            style={{ width: "100%" }}
           />
         )}
       </Col>
