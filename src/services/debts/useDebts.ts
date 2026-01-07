@@ -10,7 +10,7 @@ export interface Debt {
   amount: number;
   due_date: string;
   note?: string;
-  status: "pending" | "paid";
+  status: "pending" | "paid" | "unpaid";
   created_at: string;
 }
 

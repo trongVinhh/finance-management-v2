@@ -14,6 +14,7 @@ import {
   Popconfirm,
   Space,
   Tag,
+  Statistic,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useLoans } from "../services/loans/useLoans";
@@ -36,6 +37,15 @@ export default function Loans() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
   const [form] = Form.useForm();
+
+  const totalPaid = loans?.reduce(
+    (acc, curr) => (curr.status === "paid" ? acc + curr.amount : acc),
+    0
+  ) || 0;
+  const totalUnpaid = loans?.reduce(
+    (acc, curr) => (curr.status === "pending" ? acc + curr.amount : acc),
+    0
+  ) || 0;
 
   const handleSave = async (values: any) => {
     try {
@@ -142,6 +152,26 @@ export default function Loans() {
             </Button>
           </Col>
         </Row>
+        <Row gutter={16} style={{ marginTop: 24 }}>
+          <Col span={12}>
+            <Statistic
+              title="Tổng đã trả"
+              value={totalPaid}
+              precision={0}
+              suffix="₫"
+              valueStyle={{ color: "#3f8600" }}
+            />
+          </Col>
+          <Col span={12}>
+            <Statistic
+              title="Tổng chưa trả"
+              value={totalUnpaid}
+              precision={0}
+              suffix="₫"
+              valueStyle={{ color: "#cf1322" }}
+            />
+          </Col>
+        </Row>
       </Card>
 
       <Table
@@ -195,6 +225,6 @@ export default function Loans() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </div >
   );
 }

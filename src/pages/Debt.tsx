@@ -14,6 +14,7 @@ import {
   Popconfirm,
   Space,
   Tag,
+  Statistic,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useDebts } from "../services/debts/useDebts";
@@ -36,6 +37,15 @@ export default function Debts() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [form] = Form.useForm();
+
+  const totalPaid = debts?.reduce(
+    (acc, curr) => (curr.status === "paid" ? acc + curr.amount : acc),
+    0
+  ) || 0;
+  const totalUnpaid = debts?.reduce(
+    (acc, curr) => (curr.status === "unpaid" ? acc + curr.amount : acc),
+    0
+  ) || 0;
 
   const handleSave = async (values: any) => {
     try {
@@ -145,6 +155,26 @@ export default function Debts() {
             >
               Thêm khoản nợ
             </Button>
+          </Col>
+        </Row>
+        <Row gutter={16} style={{ marginTop: 24 }}>
+          <Col span={12}>
+            <Statistic
+              title="Tổng đã thu"
+              value={totalPaid}
+              precision={0}
+              suffix="₫"
+              valueStyle={{ color: "#3f8600" }}
+            />
+          </Col>
+          <Col span={12}>
+            <Statistic
+              title="Tổng chưa thu"
+              value={totalUnpaid}
+              precision={0}
+              suffix="₫"
+              valueStyle={{ color: "#cf1322" }}
+            />
           </Col>
         </Row>
       </Card>
