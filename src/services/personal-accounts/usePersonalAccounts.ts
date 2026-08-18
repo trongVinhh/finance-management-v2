@@ -9,7 +9,7 @@ export interface PersonalAccount {
   username?: string | null;
   email?: string | null;
   phone?: string | null;
-  password?: string | null;
+  password?: string | null; // Optional: Only fetched on-demand for security
   note?: string | null;
   created_at?: string;
 }
@@ -18,13 +18,13 @@ export function usePersonalAccounts(userId: string) {
   const [accounts, setAccounts] = useState<PersonalAccount[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🟢 Lấy dữ liệu
+  // 🟢 Lấy danh sách tài khoản (KHÔNG lấy password về client để bảo mật)
   const fetchAccounts = async () => {
     if (!userId) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("personal_accounts")
-      .select("*")
+      .select("id, user_id, type, name, username, email, phone, note, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
@@ -36,6 +36,23 @@ export function usePersonalAccounts(userId: string) {
     setLoading(false);
   };
 
+  // 🔒 On-demand API Call: Chỉ kéo password về khi xác nhận đúng mật khẩu master
+  const fetchAccountPassword = async (id: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase
+        .from("personal_accounts")
+        .select("password")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+      return data?.password || "";
+    } catch (error) {
+      console.error("❌ Lỗi lấy mật khẩu tài khoản:", error);
+      return null;
+    }
+  };
+
   // 🟢 Thêm mới
   const addAccount = async (account: PersonalAccount) => {
     const { error } = await supabase.from("personal_accounts").insert([account]);
@@ -45,7 +62,6 @@ export function usePersonalAccounts(userId: string) {
 
   // 🟢 Cập nhật
   const updateAccount = async (account: PersonalAccount) => {
-    console.log(account)
     if (!account.id) return;
     const { error } = await supabase
       .from("personal_accounts")
@@ -69,5 +85,13 @@ export function usePersonalAccounts(userId: string) {
     fetchAccounts();
   }, [userId]);
 
-  return { accounts, loading, addAccount, updateAccount, deleteAccount, refresh };
+  return {
+    accounts,
+    loading,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    fetchAccountPassword,
+    refresh,
+  };
 }
