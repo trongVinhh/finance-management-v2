@@ -20,19 +20,21 @@ import {
   Spin,
   DatePicker,
   Radio,
+  Segmented,
+  Avatar,
+  Grid,
 } from "antd";
 import {
-  PlusOutlined,
+  SearchOutlined,
   EditOutlined,
   DeleteOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  AppstoreOutlined,
+  UnorderedListOutlined,
   MoneyCollectOutlined,
   CreditCardOutlined,
-  SearchOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  UserOutlined,
   DollarOutlined,
-  CalendarOutlined,
 } from "@ant-design/icons";
 import { useDebts, type Debt } from "../services/debts/useDebts";
 import { useLoans, type Loan } from "../services/loans/useLoans";
@@ -40,15 +42,20 @@ import { useNotify } from "../contexts/NotifycationContext";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function DebtsPage() {
   const notify = useNotify();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md; // Responsive check for screens < 768px
+
   const { debts, loading: loadingDebts, addDebt, updateDebt, deleteDebt } = useDebts();
   const { loans, loading: loadingLoans, addLoan, updateLoan, deleteLoan } = useLoans();
 
   // Tab 1 (Default): Cho vay / Nợ phải thu (uses debts dataset containing Yến, Khánh, Đạt...)
   // Tab 2: Đi vay / Nợ phải trả (uses loans dataset)
   const [activeTab, setActiveTab] = useState<"debts" | "loans">("debts");
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -56,6 +63,9 @@ export default function DebtsPage() {
   const [entryType, setEntryType] = useState<"debts" | "loans">("debts");
   const [editingItem, setEditingItem] = useState<Debt | Loan | null>(null);
   const [form] = Form.useForm();
+
+  // Force Card View on Mobile Screens for best Mobile UX
+  const currentViewMode = isMobile ? "card" : viewMode;
 
   // Currency Formatter
   const formatMoney = (val: number) => {
@@ -136,7 +146,7 @@ export default function DebtsPage() {
       notify(
         "success",
         "Thành công",
-        `Đã cập nhật trạng thái khoản nợ thành: ${newStatus === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}`
+        `Đã cập nhật trạng thái thành: ${newStatus === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}`
       );
     } catch (err) {
       notify("error", "Lỗi", "Không thể cập nhật trạng thái");
@@ -172,7 +182,7 @@ export default function DebtsPage() {
             ...payload,
             lender_name: values.person_name,
           });
-          notify("success", "Thành công", "Đã cập nhật khoản cho vay (nợ phải thu)");
+          notify("success", "Thành công", "Đã cập nhật khoản cho vay");
         } else {
           await addDebt({
             ...payload,
@@ -186,7 +196,7 @@ export default function DebtsPage() {
             ...payload,
             borrower_name: values.person_name,
           });
-          notify("success", "Thành công", "Đã cập nhật khoản đi vay (nợ phải trả)");
+          notify("success", "Thành công", "Đã cập nhật khoản đi vay");
         } else {
           await addLoan({
             ...payload,
@@ -203,7 +213,7 @@ export default function DebtsPage() {
     }
   };
 
-  // Columns for Tables
+  // Desktop Table Columns
   const getColumns = (type: "debts" | "loans") => [
     {
       title: type === "debts" ? "Người vay (Nợ bạn)" : "Người cho vay (Bạn nợ họ)",
@@ -211,8 +221,8 @@ export default function DebtsPage() {
       key: "person",
       render: (text: string) => (
         <Space>
-          <UserOutlined style={{ color: type === "debts" ? "#16a34a" : "#dc2626" }} />
-          <Text strong style={{ fontSize: "15px" }}>{text}</Text>
+          <Avatar style={{ backgroundColor: type === "debts" ? "#dcfce7" : "#fee2e2", color: type === "debts" ? "#15803d" : "#b91c1c" }} icon={<UserOutlined />} />
+          <Text strong style={{ fontSize: "15px", color: "#0f172a" }}>{text}</Text>
         </Space>
       ),
     },
@@ -245,8 +255,7 @@ export default function DebtsPage() {
         return (
           <Tag
             color={isPaid ? "success" : "warning"}
-            icon={isPaid ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
-            style={{ padding: "4px 10px", borderRadius: "6px", fontSize: "13px" }}
+            style={{ padding: "4px 10px", borderRadius: "6px", fontSize: "13px", fontWeight: 600 }}
           >
             {isPaid ? "Đã thanh toán" : "Chưa thanh toán"}
           </Tag>
@@ -266,21 +275,24 @@ export default function DebtsPage() {
         const isPaid = record.status === "paid";
         return (
           <Space>
-            <Tooltip title={isPaid ? "Đánh dấu chưa trả" : "Đánh dấu đã trả"}>
-              <Button
-                size="small"
-                type={isPaid ? "default" : "primary"}
-                icon={isPaid ? <ClockCircleOutlined /> : <CheckCircleOutlined />}
-                onClick={() => handleToggleStatus(record, type)}
-                style={{ borderRadius: "6px" }}
-              >
-                {isPaid ? "Chưa trả" : "Đã trả"}
-              </Button>
-            </Tooltip>
+            <Button
+              size="small"
+              type={isPaid ? "default" : "primary"}
+              onClick={() => handleToggleStatus(record, type)}
+              style={{
+                borderRadius: "6px",
+                background: isPaid ? "#f1f5f9" : "#16a34a",
+                borderColor: isPaid ? "#cbd5e1" : "#16a34a",
+                fontWeight: 600,
+              }}
+            >
+              {isPaid ? "Chưa trả" : "Đã trả"}
+            </Button>
             <Tooltip title="Sửa">
               <Button
                 size="small"
-                icon={<EditOutlined />}
+                icon={<EditOutlined style={{ color: "#94a3b8" }} />}
+                type="text"
                 onClick={() => handleOpenEdit(record, type)}
               />
             </Tooltip>
@@ -292,7 +304,7 @@ export default function DebtsPage() {
               okButtonProps={{ danger: true }}
             >
               <Tooltip title="Xóa">
-                <Button size="small" icon={<DeleteOutlined />} danger />
+                <Button size="small" icon={<DeleteOutlined style={{ color: "#f87171" }} />} type="text" danger />
               </Tooltip>
             </Popconfirm>
           </Space>
@@ -302,89 +314,88 @@ export default function DebtsPage() {
   ];
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1280px", margin: "0 auto" }}>
-      {/* Header Title Banner */}
-      <div style={{ marginBottom: "24px" }}>
-        <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col xs={24} md={14}>
-            <Title level={2} style={{ margin: 0, fontWeight: 700, color: "#0f172a" }}>
-              💸 Quản Lý Nợ
+    <div style={{ padding: "16px", maxWidth: "1280px", margin: "0 auto" }}>
+      {/* Header Banner */}
+      <div style={{ marginBottom: "16px" }}>
+        <Row justify="space-between" align="middle" gutter={[12, 12]}>
+          <Col xs={16} md={14}>
+            <Title level={3} style={{ margin: 0, fontWeight: 700, color: "#0f172a", fontSize: "20px" }}>
+              Quản Lý Nợ
             </Title>
-            <Text type="secondary" style={{ fontSize: "15px" }}>
-              Theo dõi và quản lý các khoản Cho vay (Nợ phải thu) & Đi vay (Nợ phải trả)
+            <Text type="secondary" style={{ fontSize: "13px" }}>
+              Nợ phải thu (Cho vay) & Nợ phải trả (Đi vay)
             </Text>
           </Col>
-          <Col xs={24} md={10} style={{ textAlign: "right" }}>
+          <Col xs={8} md={10} style={{ textAlign: "right" }}>
             <Space wrap>
               <Button
                 type="primary"
                 size="large"
-                icon={<PlusOutlined />}
                 onClick={() => handleOpenAdd("debts")}
                 style={{
                   borderRadius: "10px",
                   background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
                   boxShadow: "0 4px 12px rgba(22, 163, 74, 0.3)",
-                  height: "46px",
+                  height: "44px",
                   fontWeight: 600,
                 }}
               >
-                + Cho vay (Nợ phải thu)
+                + Cho vay
               </Button>
               <Button
                 type="primary"
                 size="large"
                 danger
-                icon={<PlusOutlined />}
                 onClick={() => handleOpenAdd("loans")}
                 style={{
                   borderRadius: "10px",
                   background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
                   boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)",
-                  height: "46px",
+                  height: "44px",
                   fontWeight: 600,
                 }}
               >
-                + Đi vay (Nợ phải trả)
+                + Đi vay
               </Button>
             </Space>
           </Col>
         </Row>
       </div>
 
-      {/* Statistics Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-        <Col xs={24} sm={8}>
-          <Card className="modern-card" bodyStyle={{ padding: "20px" }}>
+      {/* Mobile Summary Statistics */}
+      <Row gutter={[12, 12]} style={{ marginBottom: "16px" }}>
+        <Col xs={12} sm={8}>
+          <Card className="modern-card" bodyStyle={{ padding: "14px 16px" }}>
             <Statistic
-              title={<Text type="secondary">Cho vay (Nợ phải thu)</Text>}
+              title={<Text type="secondary" style={{ fontSize: "12px" }}>Cho vay (Nợ phải thu)</Text>}
               value={totalChoVayPending}
               formatter={(val) => formatMoney(Number(val))}
               prefix={<MoneyCollectOutlined style={{ color: "#16a34a" }} />}
-              valueStyle={{ fontWeight: 700, color: "#16a34a" }}
+              valueStyle={{ fontWeight: 700, fontSize: "18px", color: "#16a34a" }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
-          <Card className="modern-card" bodyStyle={{ padding: "20px" }}>
+        <Col xs={12} sm={8}>
+          <Card className="modern-card" bodyStyle={{ padding: "14px 16px" }}>
             <Statistic
-              title={<Text type="secondary">Đi vay (Nợ phải trả)</Text>}
+              title={<Text type="secondary" style={{ fontSize: "12px" }}>Đi vay (Nợ phải trả)</Text>}
               value={totalDiVayPending}
               formatter={(val) => formatMoney(Number(val))}
               prefix={<CreditCardOutlined style={{ color: "#dc2626" }} />}
-              valueStyle={{ fontWeight: 700, color: "#dc2626" }}
+              valueStyle={{ fontWeight: 700, fontSize: "18px", color: "#dc2626" }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
-          <Card className="modern-card" bodyStyle={{ padding: "20px" }}>
+          <Card className="modern-card" bodyStyle={{ padding: "14px 16px" }}>
             <Statistic
-              title={<Text type="secondary">Vị thế Nợ Ròng (Thu - Trả)</Text>}
+              title={<Text type="secondary" style={{ fontSize: "12px" }}>Vị thế Nợ Ròng (Thu - Trả)</Text>}
               value={netDebtPosition}
               formatter={(val) => formatMoney(Number(val))}
               prefix={<DollarOutlined style={{ color: netDebtPosition >= 0 ? "#16a34a" : "#dc2626" }} />}
               valueStyle={{
                 fontWeight: 700,
+                fontSize: "18px",
                 color: netDebtPosition >= 0 ? "#16a34a" : "#dc2626",
               }}
             />
@@ -392,10 +403,10 @@ export default function DebtsPage() {
         </Col>
       </Row>
 
-      {/* Filters Card */}
-      <Card className="modern-card" style={{ marginBottom: "24px" }} bodyStyle={{ padding: "16px 20px" }}>
-        <Row gutter={[16, 16]} align="middle" justify="space-between">
-          <Col xs={24} md={14}>
+      {/* Filters Bar */}
+      <Card className="modern-card" style={{ marginBottom: "16px" }} bodyStyle={{ padding: "12px 16px" }}>
+        <Row gutter={[12, 12]} align="middle" justify="space-between">
+          <Col xs={24} md={16}>
             <Space wrap size="middle" style={{ width: "100%" }}>
               <Input
                 placeholder="Tìm tên người vay/cho vay, ghi chú..."
@@ -403,7 +414,7 @@ export default function DebtsPage() {
                 allowClear
                 size="large"
                 value={searchText}
-                style={{ width: 280, borderRadius: "8px" }}
+                style={{ width: "100%", maxWidth: 300, borderRadius: "10px" }}
                 onChange={(e) => setSearchText(e.target.value)}
               />
 
@@ -419,11 +430,26 @@ export default function DebtsPage() {
               </Radio.Group>
             </Space>
           </Col>
+
+          {!isMobile && (
+            <Col md={8} style={{ textAlign: "right" }}>
+              <Segmented
+                size="large"
+                value={viewMode}
+                onChange={(value) => setViewMode(value as "card" | "table")}
+                options={[
+                  { value: "card", icon: <AppstoreOutlined /> },
+                  { value: "table", icon: <UnorderedListOutlined /> },
+                ]}
+                style={{ borderRadius: "10px" }}
+              />
+            </Col>
+          )}
         </Row>
       </Card>
 
-      {/* Main Tabs: TAB 1 (Default) = Cho vay (debts dataset), TAB 2 = Đi vay (loans dataset) */}
-      <Card className="modern-card" bodyStyle={{ padding: "12px 20px 24px 20px" }}>
+      {/* Main Tabs: TAB 1 (Default Active) = Cho vay (debts dataset), TAB 2 = Đi vay (loans dataset) */}
+      <Card className="modern-card" bodyStyle={{ padding: "12px 16px 20px 16px" }}>
         <Tabs
           activeKey={activeTab}
           onChange={(key) => setActiveTab(key as "debts" | "loans")}
@@ -432,15 +458,115 @@ export default function DebtsPage() {
             {
               key: "debts",
               label: (
-                <Space>
-                  <MoneyCollectOutlined style={{ color: "#16a34a" }} />
-                  <span style={{ fontWeight: 600 }}>
-                    Cho vay / Nợ phải thu ({debts.filter((d) => d.status !== "paid").length})
-                  </span>
-                </Space>
+                <span style={{ fontWeight: 600 }}>
+                  Cho vay / Nợ phải thu ({debts.filter((d) => d.status !== "paid").length})
+                </span>
               ),
               children: loadingDebts ? (
                 <div style={{ textAlign: "center", padding: "40px" }}><Spin size="large" /></div>
+              ) : filteredDebts.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 16px", color: "#64748b" }}>
+                  Chưa có khoản cho vay nào. Bấm '+ Cho vay' để thêm mới.
+                </div>
+              ) : currentViewMode === "card" ? (
+                /* MOBILE FIRST CARD LIST VIEW FOR CHO VAY */
+                <Row gutter={[12, 12]}>
+                  {filteredDebts.map((item) => {
+                    const isPaid = item.status === "paid";
+                    return (
+                      <Col xs={24} sm={12} lg={8} xl={6} key={item.id}>
+                        <Card
+                          className="vault-card"
+                          style={{
+                            borderRadius: "14px",
+                            border: "1px solid #e2e8f0",
+                            background: "#ffffff",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                          }}
+                          bodyStyle={{ padding: "16px" }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              <Avatar size={42} style={{ backgroundColor: "#dcfce7", color: "#15803d" }} icon={<UserOutlined />} />
+                              <div>
+                                <Text strong style={{ fontSize: "16px", color: "#0f172a", display: "block" }}>
+                                  {item.lender_name}
+                                </Text>
+                                <Tag color={isPaid ? "success" : "warning"} style={{ fontSize: "11px", borderRadius: "4px", margin: "2px 0 0 0", fontWeight: 600 }}>
+                                  {isPaid ? "Đã thanh toán" : "Chưa thanh toán"}
+                                </Tag>
+                              </div>
+                            </div>
+
+                            <Space size={0}>
+                              <Tooltip title="Sửa">
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  icon={<EditOutlined style={{ color: "#94a3b8" }} />}
+                                  onClick={() => handleOpenEdit(item, "debts")}
+                                />
+                              </Tooltip>
+                              <Popconfirm
+                                title="Xóa khoản nợ này?"
+                                onConfirm={() => handleDelete(item.id, "debts")}
+                                okText="Xóa"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                              >
+                                <Tooltip title="Xóa">
+                                  <Button type="text" size="small" icon={<DeleteOutlined style={{ color: "#f87171" }} />} />
+                                </Tooltip>
+                              </Popconfirm>
+                            </Space>
+                          </div>
+
+                          {/* Amount Display */}
+                          <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "10px 12px", marginBottom: "12px", border: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.5px" }}>SỐ TIỀN NỢ:</div>
+                              <Text strong style={{ fontSize: "18px", color: "#16a34a" }}>
+                                {formatMoney(item.amount)}
+                              </Text>
+                            </div>
+
+                            {item.due_date && (
+                              <div style={{ textAlign: "right" }}>
+                                <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8" }}>HẠN HẸN TRẢ:</div>
+                                <Text type="secondary" style={{ fontSize: "12px" }}>
+                                  {dayjs(item.due_date).format("DD/MM/YYYY")}
+                                </Text>
+                              </div>
+                            )}
+                          </div>
+
+                          {item.note && (
+                            <Text type="secondary" style={{ fontSize: "12px", display: "block", marginBottom: "12px" }}>
+                              📝 {item.note}
+                            </Text>
+                          )}
+
+                          {/* 1-Tap Toggle Status Button */}
+                          <Button
+                            type="default"
+                            block
+                            onClick={() => handleToggleStatus(item, "debts")}
+                            style={{
+                              borderRadius: "10px",
+                              background: isPaid ? "#f1f5f9" : "#f0fdf4",
+                              borderColor: isPaid ? "#cbd5e1" : "#bbf7d0",
+                              color: isPaid ? "#475569" : "#15803d",
+                              fontWeight: 600,
+                              height: "42px",
+                            }}
+                          >
+                            {isPaid ? "Đổi sang Chưa trả" : "Đánh dấu Đã trả"}
+                          </Button>
+                        </Card>
+                      </Col>
+                    );
+                  })}
+                </Row>
               ) : (
                 <Table
                   dataSource={filteredDebts}
@@ -453,15 +579,115 @@ export default function DebtsPage() {
             {
               key: "loans",
               label: (
-                <Space>
-                  <CreditCardOutlined style={{ color: "#dc2626" }} />
-                  <span style={{ fontWeight: 600 }}>
-                    Đi vay / Nợ phải trả ({loans.filter((l) => l.status !== "paid").length})
-                  </span>
-                </Space>
+                <span style={{ fontWeight: 600 }}>
+                  Đi vay / Nợ phải trả ({loans.filter((l) => l.status !== "paid").length})
+                </span>
               ),
               children: loadingLoans ? (
                 <div style={{ textAlign: "center", padding: "40px" }}><Spin size="large" /></div>
+              ) : filteredLoans.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 16px", color: "#64748b" }}>
+                  Chưa có khoản đi vay nào. Bấm '+ Đi vay' để thêm mới.
+                </div>
+              ) : currentViewMode === "card" ? (
+                /* MOBILE FIRST CARD LIST VIEW FOR ĐI VAY */
+                <Row gutter={[12, 12]}>
+                  {filteredLoans.map((item) => {
+                    const isPaid = item.status === "paid";
+                    return (
+                      <Col xs={24} sm={12} lg={8} xl={6} key={item.id}>
+                        <Card
+                          className="vault-card"
+                          style={{
+                            borderRadius: "14px",
+                            border: "1px solid #e2e8f0",
+                            background: "#ffffff",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                          }}
+                          bodyStyle={{ padding: "16px" }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              <Avatar size={42} style={{ backgroundColor: "#fee2e2", color: "#b91c1c" }} icon={<UserOutlined />} />
+                              <div>
+                                <Text strong style={{ fontSize: "16px", color: "#0f172a", display: "block" }}>
+                                  {item.borrower_name}
+                                </Text>
+                                <Tag color={isPaid ? "success" : "warning"} style={{ fontSize: "11px", borderRadius: "4px", margin: "2px 0 0 0", fontWeight: 600 }}>
+                                  {isPaid ? "Đã thanh toán" : "Chưa thanh toán"}
+                                </Tag>
+                              </div>
+                            </div>
+
+                            <Space size={0}>
+                              <Tooltip title="Sửa">
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  icon={<EditOutlined style={{ color: "#94a3b8" }} />}
+                                  onClick={() => handleOpenEdit(item, "loans")}
+                                />
+                              </Tooltip>
+                              <Popconfirm
+                                title="Xóa khoản nợ này?"
+                                onConfirm={() => handleDelete(item.id, "loans")}
+                                okText="Xóa"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                              >
+                                <Tooltip title="Xóa">
+                                  <Button type="text" size="small" icon={<DeleteOutlined style={{ color: "#f87171" }} />} />
+                                </Tooltip>
+                              </Popconfirm>
+                            </Space>
+                          </div>
+
+                          {/* Amount Display */}
+                          <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "10px 12px", marginBottom: "12px", border: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.5px" }}>SỐ TIỀN BẠN NỢ:</div>
+                              <Text strong style={{ fontSize: "18px", color: "#dc2626" }}>
+                                {formatMoney(item.amount)}
+                              </Text>
+                            </div>
+
+                            {item.due_date && (
+                              <div style={{ textAlign: "right" }}>
+                                <div style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8" }}>HẠN HẸN TRẢ:</div>
+                                <Text type="secondary" style={{ fontSize: "12px" }}>
+                                  {dayjs(item.due_date).format("DD/MM/YYYY")}
+                                </Text>
+                              </div>
+                            )}
+                          </div>
+
+                          {item.note && (
+                            <Text type="secondary" style={{ fontSize: "12px", display: "block", marginBottom: "12px" }}>
+                              📝 {item.note}
+                            </Text>
+                          )}
+
+                          {/* 1-Tap Toggle Status Button */}
+                          <Button
+                            type="default"
+                            block
+                            onClick={() => handleToggleStatus(item, "loans")}
+                            style={{
+                              borderRadius: "10px",
+                              background: isPaid ? "#f1f5f9" : "#fef2f2",
+                              borderColor: isPaid ? "#cbd5e1" : "#fecaca",
+                              color: isPaid ? "#475569" : "#b91c1c",
+                              fontWeight: 600,
+                              height: "42px",
+                            }}
+                          >
+                            {isPaid ? "Đổi sang Chưa trả" : "Đánh dấu Đã trả"}
+                          </Button>
+                        </Card>
+                      </Col>
+                    );
+                  })}
+                </Row>
               ) : (
                 <Table
                   dataSource={filteredLoans}
@@ -475,12 +701,22 @@ export default function DebtsPage() {
         />
       </Card>
 
+      {/* MOBILE FAB FLOATING BUTTON */}
+      <Button
+        type="primary"
+        size="large"
+        className="mobile-fab-btn"
+        onClick={() => handleOpenAdd(activeTab)}
+      >
+        +
+      </Button>
+
       {/* Add / Edit Modal */}
       <Modal
         title={
           <span style={{ fontWeight: 700, fontSize: "18px" }}>
             {editingItem
-              ? `✏️ Cập nhật thông tin ${entryType === "debts" ? "Cho vay (Nợ phải thu)" : "Đi vay (Nợ phải trả)"}`
+              ? `✏️ Cập nhật khoản ${entryType === "debts" ? "Cho vay" : "Đi vay"}`
               : `➕ Thêm khoản ${entryType === "debts" ? "Cho vay (Nợ phải thu)" : "Đi vay (Nợ phải trả)"}`}
           </span>
         }
@@ -489,7 +725,7 @@ export default function DebtsPage() {
         onOk={handleSave}
         okText={editingItem ? "Lưu thay đổi" : "Thêm mới"}
         cancelText="Hủy"
-        width={500}
+        width={480}
       >
         <Form form={form} layout="vertical" style={{ paddingTop: "12px" }}>
           {!editingItem && (
@@ -502,31 +738,32 @@ export default function DebtsPage() {
                 style={{ width: "100%" }}
               >
                 <Radio.Button value="debts" style={{ width: "50%", textAlign: "center" }}>
-                  💰 Cho vay (Nợ phải thu)
+                  Cho vay (Nợ phải thu)
                 </Radio.Button>
                 <Radio.Button value="loans" style={{ width: "50%", textAlign: "center" }}>
-                  💸 Đi vay (Nợ phải trả)
+                  Đi vay (Nợ phải trả)
                 </Radio.Button>
               </Radio.Group>
             </Form.Item>
           )}
 
           <Form.Item
-            label={entryType === "debts" ? "Tên người vay (Họ nợ bạn)" : "Tên người cho vay (Bạn nợ họ)"}
+            label={entryType === "debts" ? "Tên người vay (Nợ bạn)" : "Tên người cho vay (Bạn nợ)"}
             name="person_name"
             rules={[{ required: true, message: "Vui lòng nhập tên người liên quan" }]}
           >
-            <Input placeholder="ví dụ: Anh Nam, Chị Hoa, Ngân hàng A..." prefix={<UserOutlined style={{ color: "#cbd5e1" }} />} />
+            <Input size="large" placeholder="ví dụ: Anh Nam, Chị Hoa, Ngân hàng A..." prefix={<UserOutlined style={{ color: "#cbd5e1" }} />} />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
+          <Row gutter={12}>
+            <Col xs={24} sm={12}>
               <Form.Item
                 label="Số tiền (VND)"
                 name="amount"
                 rules={[{ required: true, message: "Nhập số tiền" }]}
               >
                 <InputNumber
+                  size="large"
                   style={{ width: "100%" }}
                   min={0}
                   step={50000}
@@ -537,9 +774,10 @@ export default function DebtsPage() {
               </Form.Item>
             </Col>
 
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item label="Trạng thái" name="status">
                 <Select
+                  size="large"
                   options={[
                     { label: "Chưa thanh toán", value: "pending" },
                     { label: "Đã thanh toán", value: "paid" },
@@ -550,7 +788,7 @@ export default function DebtsPage() {
           </Row>
 
           <Form.Item label="Hạn hẹn trả" name="due_date">
-            <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" placeholder="Chọn ngày hẹn trả" />
+            <DatePicker size="large" style={{ width: "100%" }} format="DD/MM/YYYY" placeholder="Chọn ngày hẹn trả" />
           </Form.Item>
 
           <Form.Item label="Ghi chú" name="note">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ColumnsType } from "antd/es/table";
 import {
   Button,
   Input,
@@ -19,6 +20,7 @@ import {
   Spin,
   Divider,
   message,
+  Grid,
   Avatar,
 } from "antd";
 import {
@@ -53,10 +55,13 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNotify } from "../contexts/NotifycationContext";
 
 const { Title, Text } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function PersonalAccountPage() {
   const { user } = useAuth();
   const notify = useNotify();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   if (!user) {
     return (
@@ -79,6 +84,7 @@ export default function PersonalAccountPage() {
   } = usePersonalAccounts(user.id);
 
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const currentViewMode = isMobile ? "card" : viewMode;
   const [filters, setFilters] = useState({
     searchText: "",
     selectedType: undefined as string | undefined,
@@ -141,7 +147,7 @@ export default function PersonalAccountPage() {
 
     setFetchingPassword(true);
     message.loading({ content: "Đang tải mật khẩu từ hệ thống...", key: "pass-api" });
-    
+
     const pwd = await fetchAccountPassword(selectedAccount.id);
     setFetchingPassword(false);
 
@@ -243,7 +249,7 @@ export default function PersonalAccountPage() {
   };
 
   // Clean Table View Column Mapping
-  const columns = [
+  const columns: ColumnsType<PersonalAccount> = [
     {
       title: "Dịch vụ",
       key: "service",
@@ -442,18 +448,20 @@ export default function PersonalAccountPage() {
               onChange={(e) => setFilters((f) => ({ ...f, searchText: e.target.value }))}
             />
           </Col>
-          <Col xs={24} md={6} style={{ textAlign: "right" }}>
-            <Segmented
-              size="large"
-              value={viewMode}
-              onChange={(value) => setViewMode(value as "card" | "table")}
-              options={[
-                { value: "card", icon: <AppstoreOutlined /> },
-                { value: "table", icon: <UnorderedListOutlined /> },
-              ]}
-              style={{ borderRadius: "10px" }}
-            />
-          </Col>
+          {!isMobile && (
+            <Col md={6} style={{ textAlign: "right" }}>
+              <Segmented
+                size="large"
+                value={viewMode}
+                onChange={(value) => setViewMode(value as "card" | "table")}
+                options={[
+                  { value: "card", icon: <AppstoreOutlined /> },
+                  { value: "table", icon: <UnorderedListOutlined /> },
+                ]}
+                style={{ borderRadius: "10px" }}
+              />
+            </Col>
+          )}
         </Row>
 
         {/* ELEGANT HORIZONTAL CHIP PILLS (TEXT ONLY) */}
@@ -511,7 +519,7 @@ export default function PersonalAccountPage() {
             </Button>
           </div>
         </Card>
-      ) : viewMode === "card" ? (
+      ) : currentViewMode === "card" ? (
         /* HIGH-END CARD GRID (NO EMBEDDED BUTTON ICONS) */
         <Row gutter={[16, 16]}>
           {filteredAccounts.map((account) => {
