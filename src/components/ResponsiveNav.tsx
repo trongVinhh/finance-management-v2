@@ -56,15 +56,15 @@ export default function ResponsiveNav({ children }: ResponsiveNavProps) {
         }}
         className="desktop-sidebar"
       >
-        <div style={{ 
-          color: 'white', 
-          padding: '16px', 
+        <div style={{
+          color: 'white',
+          padding: '16px',
           fontWeight: 'bold',
           fontSize: '16px',
           textAlign: 'center',
           borderBottom: '1px solid #303030'
         }}>
-          Quản lí tài chính
+          Quản lí thông tin
         </div>
         <Menu
           theme="dark"
@@ -89,7 +89,7 @@ export default function ResponsiveNav({ children }: ResponsiveNavProps) {
           }}
         />
         <Title level={4} style={{ color: 'white', margin: 0 }}>
-          Quản lí tài chính
+          Quản lí thông tin
         </Title>
         <div style={{ width: '48px' }} />
       </div>
