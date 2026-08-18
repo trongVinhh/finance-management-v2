@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ColumnsType } from "antd/es/table";
 import {
   Button,
   Input,
@@ -20,6 +21,7 @@ import {
   Divider,
   message,
   Grid,
+  Avatar,
 } from "antd";
 import {
   SearchOutlined,
@@ -145,7 +147,7 @@ export default function PersonalAccountPage() {
 
     setFetchingPassword(true);
     message.loading({ content: "Đang tải mật khẩu từ hệ thống...", key: "pass-api" });
-    
+
     const pwd = await fetchAccountPassword(selectedAccount.id);
     setFetchingPassword(false);
 
@@ -247,7 +249,7 @@ export default function PersonalAccountPage() {
   };
 
   // Clean Table View Column Mapping
-  const columns = [
+  const columns: ColumnsType<PersonalAccount> = [
     {
       title: "Dịch vụ",
       key: "service",
