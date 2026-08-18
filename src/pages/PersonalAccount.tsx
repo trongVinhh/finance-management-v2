@@ -43,7 +43,6 @@ import {
   ReadOutlined,
   DollarOutlined,
   SafetyCertificateOutlined,
-  SafetyOutlined,
   LockTwoTone,
   ApiOutlined,
 } from "@ant-design/icons";
@@ -341,20 +340,7 @@ export default function PersonalAccountPage() {
         <Row justify="space-between" align="middle" gutter={[12, 12]}>
           <Col xs={16} md={16}>
             <Space align="center" size="middle">
-              <div
-                style={{
-                  width: "46px",
-                  height: "46px",
-                  borderRadius: "14px",
-                  background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 6px 16px rgba(2, 132, 199, 0.25)",
-                }}
-              >
-                <SafetyOutlined style={{ fontSize: "26px", color: "#fff" }} />
-              </div>
+
               <div>
                 <Title level={3} style={{ margin: 0, fontWeight: 700, color: "#0f172a", fontSize: "22px" }}>
                   Kho Mật Khẩu

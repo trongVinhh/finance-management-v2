@@ -62,9 +62,14 @@ export default function ResponsiveNav({ children }: ResponsiveNavProps) {
           fontWeight: 'bold',
           fontSize: '16px',
           textAlign: 'center',
-          borderBottom: '1px solid #303030'
+          borderBottom: '1px solid #303030',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
         }}>
-          Quản lí thông tin
+          {/* <img src="/vault_logo.jpg" alt="Vault Logo" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} /> */}
+          <span>Quản lý thông tin</span>
         </div>
         <Menu
           theme="dark"
