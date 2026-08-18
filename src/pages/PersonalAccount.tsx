@@ -25,7 +25,6 @@ import {
   SearchOutlined,
   UserOutlined,
   KeyOutlined,
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   CopyOutlined,
