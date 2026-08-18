@@ -2,15 +2,7 @@ import React, { useState } from 'react';
 import { Layout, Menu, Button, Drawer, Typography } from 'antd';
 import {
   MenuOutlined,
-  DashboardOutlined,
-  TransactionOutlined,
-  SettingOutlined,
-  WalletOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
   LogoutOutlined,
-  TagsOutlined,
-  CreditCardOutlined,
   MoneyCollectOutlined,
   AccountBookOutlined,
 } from '@ant-design/icons';
@@ -36,16 +28,8 @@ export default function ResponsiveNav({ children }: ResponsiveNavProps) {
   };
 
   const menuItems = [
-    { key: '/', label: <Link to="/">Dashboard</Link>, icon: <DashboardOutlined /> },
-    { key: '/transactions', label: <Link to="/transactions">Giao dịch</Link>, icon: <TransactionOutlined /> },
-    { key: '/accounts', label: <Link to="/accounts">Tài khoản</Link>, icon: <WalletOutlined /> },
-    { key: '/categories', label: <Link to="/categories">Danh mục</Link>, icon: <TagsOutlined /> },
-    { key: '/income', label: <Link to="/income">Thu</Link>, icon: <ArrowUpOutlined /> },
-    { key: '/expense', label: <Link to="/expense">Chi</Link>, icon: <ArrowDownOutlined /> },
-    { key: '/debts', label: <Link to="/debts">Quản lí nợ</Link>, icon: <MoneyCollectOutlined /> },
-    { key: '/loans', label: <Link to="/loans">Quản lí vay</Link>, icon: <CreditCardOutlined  /> },
-    { key: '/personal-accounts', label: <Link to="/personal-accounts">Tài khoản cá nhân</Link>, icon: <AccountBookOutlined  /> },
-    { key: '/settings', label: <Link to="/settings">Cài đặt</Link>, icon: <SettingOutlined /> },
+    { key: '/', label: <Link to="/">Tài khoản cá nhân</Link>, icon: <AccountBookOutlined /> },
+    { key: '/debts', label: <Link to="/debts">Quản lý nợ</Link>, icon: <MoneyCollectOutlined /> },
     {
       key: 'logout',
       label: <span onClick={handleLogout}>Đăng xuất</span>,
