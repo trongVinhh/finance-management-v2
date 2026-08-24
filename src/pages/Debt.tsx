@@ -57,6 +57,7 @@ export default function DebtsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [entryType, setEntryType] = useState<"debts" | "loans">("debts");
   const [editingItem, setEditingItem] = useState<Debt | Loan | null>(null);
   const [form] = Form.useForm();
@@ -106,6 +107,12 @@ export default function DebtsPage() {
   });
 
   // Handlers
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingItem(null);
+    form.resetFields();
+  };
+
   const handleOpenAdd = (type: "debts" | "loans") => {
     setEntryType(type);
     setEditingItem(null);
@@ -127,7 +134,7 @@ export default function DebtsPage() {
       amount: item.amount,
       status: item.status === "paid" ? "paid" : "pending",
       due_date: item.due_date ? dayjs(item.due_date) : null,
-      note: item.note,
+      note: item.note || "",
     });
     setIsModalOpen(true);
   };
@@ -145,8 +152,8 @@ export default function DebtsPage() {
         "Thành công",
         `Đã cập nhật trạng thái: ${newStatus === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}`
       );
-    } catch (err) {
-      notify("error", "Lỗi", "Không thể cập nhật trạng thái");
+    } catch (err: any) {
+      notify("error", "Lỗi", err?.message || "Không thể cập nhật trạng thái");
     }
   };
 
@@ -158,19 +165,20 @@ export default function DebtsPage() {
         await deleteLoan(id);
       }
       notify("success", "Đã xóa", "Đã xóa khoản nợ thành công");
-    } catch (err) {
-      notify("error", "Lỗi", "Xóa khoản nợ thất bại");
+    } catch (err: any) {
+      notify("error", "Lỗi", err?.message || "Xóa khoản nợ thất bại");
     }
   };
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      setSubmitting(true);
       const payload = {
-        amount: values.amount,
-        status: values.status,
-        due_date: values.due_date ? values.due_date.format("YYYY-MM-DD") : "",
-        note: values.note || "",
+        amount: Number(values.amount),
+        status: values.status || "pending",
+        due_date: values.due_date ? values.due_date.format("YYYY-MM-DD") : null,
+        note: values.note ? String(values.note).trim() : "",
       };
 
       if (entryType === "debts") {
@@ -203,10 +211,15 @@ export default function DebtsPage() {
         }
       }
 
-      setIsModalOpen(false);
-      form.resetFields();
-    } catch (err) {
-      console.error("Form validation error:", err);
+      handleCloseModal();
+    } catch (err: any) {
+      console.error("Save error:", err);
+      if (err?.errorFields) {
+        return; // Ant Design form validation error
+      }
+      notify("error", "Lỗi", err?.message || "Không thể lưu thông tin khoản vay/nợ");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -746,8 +759,9 @@ export default function DebtsPage() {
           </span>
         }
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={handleCloseModal}
         onOk={handleSave}
+        confirmLoading={submitting}
         okText={editingItem ? "Lưu thay đổi" : "Tạo ngay"}
         cancelText="Hủy"
         centered
