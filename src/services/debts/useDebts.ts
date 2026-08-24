@@ -8,7 +8,7 @@ export interface Debt {
   user_id: string;
   lender_name: string;
   amount: number;
-  due_date: string;
+  due_date?: string | null;
   note?: string;
   status: "pending" | "paid" | "unpaid";
   created_at: string;

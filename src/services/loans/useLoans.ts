@@ -8,7 +8,7 @@ export interface Loan {
   user_id: string;
   borrower_name: string;
   amount: number;
-  due_date: string;
+  due_date?: string | null;
   note?: string;
   status: "pending" | "paid";
   created_at: string;
